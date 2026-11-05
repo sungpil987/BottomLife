@@ -69,6 +69,11 @@ jobs:
           test -s /tmp/reborn-debug.keystore
       - name: Import and validate Godot project
         run: godot --headless --path godot --editor --quit
+      - name: Diagnose Android export configuration
+        continue-on-error: true
+        shell: bash
+        run: |
+          godot --headless --editor --path godot --script res://ci_export_diagnostics.gd
       - name: Export debug APK
         shell: bash
         run: |
