@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
   float density(){return getResources().getDisplayMetrics().density;}
   int dp(float value){return Math.round(value*density());}
   TextView stats, notice;
+  TextView[] navLabels=new TextView[4];
   android.content.SharedPreferences prefs;
   Handler handler=new Handler();
   Random random=new Random();
@@ -54,13 +55,17 @@ public class MainActivity extends Activity {
   void build(){
     root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(BG);setContentView(root);
     header=new LinearLayout(this);header.setOrientation(1);header.setPadding(20,18,20,12);root.addView(header);
-    TextView title=label("밑바닥 인생  ·  BOTTOM LIFE",21,GOLD);title.setTypeface(null,Typeface.BOLD);title.setLetterSpacing(.09f);header.addView(title);
+    TextView title=label("밑바닥 인생  ·  BOTTOM LIFE",19,GOLD);title.setTypeface(null,Typeface.BOLD);title.setLetterSpacing(.09f);header.addView(title);
     stats=label("",15,WHITE);stats.setPadding(0,14,0,10);header.addView(stats);
     notice=label("터치로 시작해 도시를 소유하자",12,GREEN);header.addView(notice);
     ScrollView scroll=new ScrollView(this);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
     body=new LinearLayout(this);body.setOrientation(1);body.setPadding(18,16,18,30);scroll.addView(body);
     LinearLayout nav=new LinearLayout(this);nav.setPadding(4,8,4,12);nav.setBackgroundColor(0xff172437);root.addView(nav);
-    for(int i=0;i<tabs.length;i++){final int n=i;TextView t=label(tabs[i],16,WHITE);t.setGravity(Gravity.CENTER);t.setTypeface(null,Typeface.BOLD);nav.addView(t,new LinearLayout.LayoutParams(0,52,1));t.setOnClickListener(v->{tab=n;render();scroll.scrollTo(0,0);});}
+    String[] symbols={"♟","▣","◆","✦"};
+    for(int i=0;i<tabs.length;i++){final int n=i;TextView t=label(symbols[i]+"\n"+tabs[i],13,i==tab?GOLD:0xffb2c2d6);
+      t.setGravity(Gravity.CENTER);t.setTypeface(null,Typeface.BOLD);navLabels[i]=t;
+      nav.addView(t,new LinearLayout.LayoutParams(0,dp(62),1));
+      t.setOnClickListener(v->{tab=n;render();scroll.scrollTo(0,0);});}
     render();
   }
   String fmt(double n){if(n<1000)return String.format(Locale.KOREA,"%,.0f",n);String[] u={"","천","만","억","조","경","해","자"};int k=0;while(n>=10000&&k<u.length-1){n/=10000;k++;}return String.format(Locale.KOREA,"%.2f%s",n,u[k]);}
@@ -79,6 +84,7 @@ public class MainActivity extends Activity {
   void render(){
     stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");
     body.removeAllViews();
+    for(int i=0;i<navLabels.length;i++)if(navLabels[i]!=null)navLabels[i].setTextColor(i==tab?GOLD:0xffb2c2d6);
     if(tab==0)street();else if(tab==1)business();else if(tab==2)mine();else rebirth();
   }
   void street(){
@@ -104,9 +110,17 @@ public class MainActivity extends Activity {
     for(int i=0;i<businesses.length;i++){final int j=i;
       String symbol=i<2?"◈":i<5?"◆":i<8?"✦":"★";
       String state=money>=businessCost(i)?"구매 가능":"목표 "+fmt(businessCost(i))+"원";
-      button(body,symbol+"  "+businesses[i]+"  Lv."+owned[i],
-        "초당 +"+fmt(yields[i]*multi())+"원  ·  "+state,
-        ()->{if(spend(businessCost(j))){owned[j]++;notice.setText(businesses[j]+" 사업 확장!");}});
+      LinearLayout item=new LinearLayout(this);item.setGravity(Gravity.CENTER_VERTICAL);
+      LinearLayout.LayoutParams rowParams=new LinearLayout.LayoutParams(-1,dp(106));rowParams.setMargins(0,0,0,dp(10));
+      item.setPadding(dp(10),dp(8),dp(10),dp(8));item.setBackground(shape(0xff23334b,dp(16)));body.addView(item,rowParams);
+      item.addView(new BusinessArt(this,j),new LinearLayout.LayoutParams(dp(92),dp(88)));
+      LinearLayout info=new LinearLayout(this);info.setOrientation(1);info.setPadding(dp(12),0,0,0);
+      item.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+      TextView name=label(businesses[i]+"  Lv."+owned[i],15,GOLD);name.setTypeface(null,Typeface.BOLD);info.addView(name);
+      TextView income=label("초당 +"+fmt(yields[i]*multi())+"원",13,GREEN);income.setPadding(0,dp(4),0,dp(4));info.addView(income);
+      TextView price=label("구매 "+fmt(businessCost(i))+"원",12,0xffd8e2f0);info.addView(price);
+      item.setOnClickListener(v->{if(spend(businessCost(j))){owned[j]++;notice.setText(businesses[j]+" 사업 확장!");}save();render();});
+
 
     }
   }
@@ -164,6 +178,34 @@ public class MainActivity extends Activity {
   int businessCount(){int n=0;for(int v:owned)n+=v;return n;}
   String rank(){if(prestige>=10)return "전설의 환생자";if(prestige>=1)return "다시 태어난 자";if(money>=1e9)return "재벌 회장";if(money>=1e6)return "사업가";if(money>=10000)return "자영업자";return "거리의 도전자";}
   void achievement(String name,boolean done,String goal){addText(body,(done?"[달성] ":"[진행] ")+name+"  ·  "+goal,14,done?GREEN:0xffaebbd0);}
+  class BusinessArt extends View {
+    Paint p=new Paint(3);int index;
+    BusinessArt(Context ctx,int i){super(ctx);index=i;}
+    void box(Canvas c,int color,float l,float t,float r,float b,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);}
+    void line(Canvas c,int color,float a,float b,float d,float e,float width){p.setColor(color);p.setStrokeWidth(width);c.drawLine(a,b,d,e,p);}
+    protected void onDraw(Canvas canvas){
+      super.onDraw(canvas);float scale=Math.min(getWidth()/100f,getHeight()/96f);canvas.save();
+      canvas.translate((getWidth()-100*scale)/2,(getHeight()-96*scale)/2);canvas.scale(scale,scale);
+      int[] sky={0xff253b53,0xff344458,0xff59435b,0xff35465b,0xff584a42,0xff293e50,0xff293b5a,0xff393b55,0xff2a354d,0xff243450,0xff182f4a};
+      box(canvas,sky[index],0,0,100,96,12);
+      p.setColor(0x44ffdc88);canvas.drawCircle(78,19,17,p);
+      box(canvas,0xff172432,0,77,100,96,0);
+      if(index==0){box(canvas,0xffab7d54,19,47,81,73,5);box(canvas,0xffe3c79b,29,56,72,69,3);}
+      else if(index==1){for(int k=0;k<3;k++)box(canvas,0xff8d9fa7,13+k*25,51-k*5,35+k*25,79,3);}
+      else if(index<6){
+        box(canvas,0xffb3a9a0,15,30,85,80,3);
+        box(canvas,index==2?0xffdc704e:0xffe0bc78,11,26,89,42,3);
+        for(int k=0;k<3;k++)box(canvas,0xff2b5365,22+k*22,49,36+k*22,72,2);
+        box(canvas,0xffefca6b,39,32,61,38,2);
+      }else{
+        box(canvas,0xff738b9e,16,13,84,81,3);
+        for(int y=23;y<76;y+=14)for(int x=25;x<79;x+=16)box(canvas,(x+y)%3==0?0xfff6d382:0xff9bd5e3,x,y,x+9,y+8,1);
+        if(index>=9){box(canvas,0xffb9c4cc,43,2,57,14,2);box(canvas,0xffd6ad5a,38,0,62,5,2);}
+      }
+      line(canvas,0xffc99d55,6,81,94,81,2);
+      canvas.restore();
+    }
+  }
   class MineView extends View {
     Paint p=new Paint(3);
     MineView(Context ctx){super(ctx);setOnClickListener(v->{dig();save();render();});}
