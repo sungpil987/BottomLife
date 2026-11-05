@@ -286,6 +286,23 @@ public class MainActivity extends Activity {
       }
     }
   }
+  Runnable ticker=new Runnable(){public void run(){
+    long now=System.currentTimeMillis();
+    double sec=Math.min(5,Math.max(0,(now-lastTick)/1000.0));lastTick=now;
+    if(sec>0){
+      earn(passive()*sec);
+      if(drill>1){
+        int digs=(int)Math.min(20,Math.floor((drill-1)*sec));
+        for(int i=0;i<digs;i++)dig();
+      }
+    }
+    if(now-lastSave>1000){
+      stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");
+      lastSave=now;
+    }
+    if(now%5000<1100)save();
+    handler.postDelayed(this,1000);
+  }};
   void save(){
     try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);j.put("totalTaps",totalTaps);j.put("bestDepth",bestDepth);j.put("questClaims",questClaims);org.json.JSONArray relicArray=new org.json.JSONArray();for(int r:relics)relicArray.put(r);j.put("relics",relicArray);
       org.json.JSONArray a=new org.json.JSONArray();for(int v:owned)a.put(v);j.put("owned",a);prefs.edit().putString("state",j.toString()).putLong("savedAt",System.currentTimeMillis()).apply();
