@@ -15,12 +15,19 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Install Android SDK 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify Android SDK available on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms"
+          ls "$ANDROID_HOME/build-tools"
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar" || { echo 'Android SDK platform 35 missing'; exit 1; }
+          echo "SDK verified"
       - name: Build debug APK
         working-directory: libgdx
         run: gradle :android:assembleDebug --no-daemon --stacktrace
