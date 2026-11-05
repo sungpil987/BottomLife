@@ -4,6 +4,9 @@ import android.app.*;
 import android.os.*;
 import android.content.*;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.*;
@@ -15,6 +18,7 @@ import java.util.Random;
 public class MainActivity extends Activity {
   final int BG=0xff101827, PANEL=0xff202d40, GOLD=0xffffd166, WHITE=0xfff4f6fc, GREEN=0xff64e6b0;
   LinearLayout root, body, header;
+  HeroView hero;
   TextView stats, notice;
   android.content.SharedPreferences prefs;
   Handler handler=new Handler();
@@ -35,7 +39,7 @@ public class MainActivity extends Activity {
   TextView label(String s,int size,int color){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
   void addText(LinearLayout box,String s,int size,int color){TextView t=label(s,size,color);t.setPadding(10,12,10,12);box.addView(t);}
   void button(LinearLayout box,String title,String subtitle,Runnable action){
-    LinearLayout card=new LinearLayout(this);card.setOrientation(1);card.setPadding(22,18,22,18);card.setBackground(shape(PANEL,20));
+    LinearLayout card=new LinearLayout(this);card.setOrientation(1);card.setPadding(22,18,22,18);card.setBackground(shape(0xff23334b,24));card.setElevation(3);
     TextView a=label(title,17,WHITE);a.setTypeface(null,Typeface.BOLD);card.addView(a);
     if(subtitle!=null){TextView b=label(subtitle,13,0xffb5c5d8);b.setPadding(0,6,0,0);card.addView(b);}
     LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,0,0,12);box.addView(card,lp);
@@ -44,12 +48,12 @@ public class MainActivity extends Activity {
   void build(){
     root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(BG);setContentView(root);
     header=new LinearLayout(this);header.setOrientation(1);header.setPadding(20,18,20,12);root.addView(header);
-    TextView title=label("밑바닥 인생  ·  BOTTOM LIFE",21,GOLD);title.setTypeface(null,Typeface.BOLD);header.addView(title);
-    stats=label("",15,WHITE);stats.setPadding(0,10,0,6);header.addView(stats);
+    TextView title=label("밑바닥 인생  ·  BOTTOM LIFE",21,GOLD);title.setTypeface(null,Typeface.BOLD);title.setLetterSpacing(.09f);header.addView(title);
+    stats=label("",15,WHITE);stats.setPadding(0,14,0,10);header.addView(stats);
     notice=label("터치로 시작해 도시를 소유하자",12,GREEN);header.addView(notice);
     ScrollView scroll=new ScrollView(this);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
     body=new LinearLayout(this);body.setOrientation(1);body.setPadding(18,16,18,30);scroll.addView(body);
-    LinearLayout nav=new LinearLayout(this);nav.setPadding(4,8,4,12);nav.setBackgroundColor(PANEL);root.addView(nav);
+    LinearLayout nav=new LinearLayout(this);nav.setPadding(4,8,4,12);nav.setBackgroundColor(0xff172437);root.addView(nav);
     for(int i=0;i<tabs.length;i++){final int n=i;TextView t=label(tabs[i],16,WHITE);t.setGravity(Gravity.CENTER);t.setTypeface(null,Typeface.BOLD);nav.addView(t,new LinearLayout.LayoutParams(0,52,1));t.setOnClickListener(v->{tab=n;render();scroll.scrollTo(0,0);});}
     render();
   }
@@ -73,8 +77,8 @@ public class MainActivity extends Activity {
   }
   void street(){
     addText(body,"거리에서 시작하는 인생",23,GOLD);
-    addText(body,"     (•‿•)\n    /|   |\\\n     /   \\ \n\n빈털터리에서 재벌까지!",25,WHITE);
-    button(body,"터치해서 돈 벌기  +"+fmt(tapIncome())+"원","무한 터치 가능 · 누적 수익 "+fmt(lifetime)+"원",()->{earn(tapIncome());notice.setText("+"+fmt(tapIncome())+"원 획득!");});
+    hero=new HeroView(this);body.addView(hero,new LinearLayout.LayoutParams(-1,410));
+    button(body,"터치 수익  +"+fmt(tapIncome())+"원","위 캐릭터를 터치해서 돈을 벌어봐 · 누적 "+fmt(lifetime)+"원",()->{earn(tapIncome());notice.setText("+"+fmt(tapIncome())+"원 획득!");});
     button(body,"터치 강화 Lv."+tapLevel,"비용 "+fmt(tapCost())+"원 · 터치 수익 증가",()->{if(spend(tapCost()))tapLevel++;});
     button(body,"도우미 고용 "+workers+"명","비용 "+fmt(workerCost())+"원 · 초당 0.5원씩 추가",()->{if(spend(workerCost()))workers++;});
     button(body,"오늘의 행운","무료 보너스 · 30초에 한 번",()->{
@@ -129,6 +133,45 @@ public class MainActivity extends Activity {
     if(now%5000<1100)save();
     handler.postDelayed(this,1000);
   }};
+  class HeroView extends View {
+    Paint p=new Paint(3);float pulse=0;
+    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());pulse=1;notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
+    void rect(Canvas c,int color,float l,float t,float r,float b,float rad){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),rad,rad,p);}
+    void circ(Canvas c,int color,float x,float y,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawCircle(x,y,radius,p);}
+    void line(Canvas c,int color,float x,float y,float xx,float yy,float w){p.setColor(color);p.setStrokeWidth(w);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x,y,xx,yy,p);}
+    void txt(Canvas c,String s,int color,float x,float y,int size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(s,x,y,p);}
+    protected void onDraw(Canvas original){
+      super.onDraw(original);Canvas c=original;float sx=getWidth()/340f,sy=getHeight()/410f;c.save();c.scale(sx,sy);
+      rect(c,0xff18273c,0,0,340,410,26);
+      rect(c,0xff273950,12,12,328,398,22);
+      p.setShader(new android.graphics.LinearGradient(0,0,0,410,0xff41516b,0xff142234,android.graphics.Shader.TileMode.CLAMP));c.drawRoundRect(new RectF(18,18,322,392),18,18,p);p.setShader(null);
+      circ(c,0x55ffca7a,260,72,42);circ(c,0x33ffffff,265,70,65);
+      rect(c,0xff1a2937,24,270,316,370,8);
+      for(int i=0;i<10;i++){float x=30+i*31;rect(c,0xff32455a,x,220-(i%3)*24,x+24,302,2);rect(c,0xffe6b65b,x+7,236-(i%3)*24,x+12,243-(i%3)*24,1);}
+      rect(c,0xff45515d,68,318,270,342,8);
+      // legs and worn shoes
+      line(c,0xff292c3a,155,271,134,317,22);line(c,0xff292c3a,185,271,211,317,22);
+      rect(c,0xff141b27,105,313,148,326,7);rect(c,0xff141b27,201,313,243,326,7);
+      // jacket and sleeves
+      rect(c,0xff8b6955,119,190,220,284,26);
+      line(c,0xff695449,126,215,94,275,24);line(c,0xff695449,210,215,245,273,24);
+      line(c,0xffcfad88,96,272,87,289,14);line(c,0xffcfad88,244,270,250,290,14);
+      // neck, face, ears
+      rect(c,0xffd9a67d,156,178,187,208,8);circ(c,0xffe6b18a,170,143,48);circ(c,0xffe6b18a,124,151,10);circ(c,0xffe6b18a,215,151,10);
+      // hair
+      circ(c,0xff222333,136,110,27);circ(c,0xff222333,165,96,34);circ(c,0xff222333,196,108,28);
+      rect(c,0xff222333,128,103,210,121,9);
+      line(c,0xff232632,148,145,158,145,3);line(c,0xff232632,185,145,195,145,3);
+      circ(c,0xff232632,155,146,2);circ(c,0xff232632,190,146,2);
+      line(c,0xffa76e62,164,168,182,168,2);
+      // cup
+      rect(c,0xffaabac6,205,271,253,300,7);rect(c,0xffe6c878,207,269,250,277,4);
+      txt(c,prestige>0?"환생자 · "+prestige+"회":depth>100?"광산 개척자":"거리의 도전자",0xffffdc89,170,48,17);
+      txt(c,"TAP TO EARN",0xfff7f0de,170,378,17);
+      if(pulse>0){txt(c,"+"+fmt(tapIncome()),0xffffd166,170,82,25);pulse=0;}
+      c.restore();
+    }
+  }
   void save(){
     try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);
       org.json.JSONArray a=new org.json.JSONArray();for(int v:owned)a.put(v);j.put("owned",a);prefs.edit().putString("state",j.toString()).putLong("savedAt",System.currentTimeMillis()).apply();
