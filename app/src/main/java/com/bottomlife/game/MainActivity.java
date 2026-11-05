@@ -5,6 +5,7 @@ import android.os.*;
 import android.content.*;
 import android.graphics.Color;
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
@@ -178,121 +179,111 @@ public class MainActivity extends Activity {
   int businessCount(){int n=0;for(int v:owned)n+=v;return n;}
   String rank(){if(prestige>=10)return "전설의 환생자";if(prestige>=1)return "다시 태어난 자";if(money>=1e9)return "재벌 회장";if(money>=1e6)return "사업가";if(money>=10000)return "자영업자";return "거리의 도전자";}
   void achievement(String name,boolean done,String goal){addText(body,(done?"[달성] ":"[진행] ")+name+"  ·  "+goal,14,done?GREEN:0xffaebbd0);}
-  class BusinessArt extends View {
-    Paint p=new Paint(3);int index;
-    BusinessArt(Context ctx,int i){super(ctx);index=i;}
-    void box(Canvas c,int color,float l,float t,float r,float b,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);}
-    void line(Canvas c,int color,float a,float b,float d,float e,float width){p.setColor(color);p.setStrokeWidth(width);c.drawLine(a,b,d,e,p);}
+
+  // Pixel-art renderer: draw on a small logical canvas and upscale with nearest-neighbor sampling.
+  abstract class PixelView extends View {
+    final Paint px=new Paint();final Paint blit=new Paint();
+    Bitmap frame;Canvas low;int logicalW,logicalH;
+    PixelView(Context ctx,int w,int h){super(ctx);logicalW=w;logicalH=h;px.setAntiAlias(false);px.setFilterBitmap(false);blit.setAntiAlias(false);blit.setFilterBitmap(false);}
+    void block(int color,int x,int y,int w,int h){px.setColor(color);low.drawRect(x,y,x+w,y+h,px);}
+    void textPixel(String text,int x,int y,int color,int size){
+      px.setColor(color);px.setTypeface(Typeface.create("monospace",Typeface.BOLD));px.setTextSize(size);px.setTextAlign(Paint.Align.CENTER);px.setAntiAlias(false);low.drawText(text,x,y,px);
+    }
+    void frame(int color){block(color,0,0,logicalW,logicalH);block(0xffd6ad66,1,1,logicalW-2,1);block(0xffd6ad66,1,logicalH-2,logicalW-2,1);}
+    protected abstract void paintPixel();
     protected void onDraw(Canvas canvas){
-      super.onDraw(canvas);float scale=Math.min(getWidth()/100f,getHeight()/96f);canvas.save();
-      canvas.translate((getWidth()-100*scale)/2,(getHeight()-96*scale)/2);canvas.scale(scale,scale);
-      int[] sky={0xff253b53,0xff344458,0xff59435b,0xff35465b,0xff584a42,0xff293e50,0xff293b5a,0xff393b55,0xff2a354d,0xff243450,0xff182f4a};
-      box(canvas,sky[index],0,0,100,96,12);
-      p.setColor(0x44ffdc88);canvas.drawCircle(78,19,17,p);
-      box(canvas,0xff172432,0,77,100,96,0);
-      if(index==0){box(canvas,0xffab7d54,19,47,81,73,5);box(canvas,0xffe3c79b,29,56,72,69,3);}
-      else if(index==1){for(int k=0;k<3;k++)box(canvas,0xff8d9fa7,13+k*25,51-k*5,35+k*25,79,3);}
-      else if(index<6){
-        box(canvas,0xffb3a9a0,15,30,85,80,3);
-        box(canvas,index==2?0xffdc704e:0xffe0bc78,11,26,89,42,3);
-        for(int k=0;k<3;k++)box(canvas,0xff2b5365,22+k*22,49,36+k*22,72,2);
-        box(canvas,0xffefca6b,39,32,61,38,2);
+      super.onDraw(canvas);
+      if(frame==null||frame.getWidth()!=logicalW||frame.getHeight()!=logicalH){frame=Bitmap.createBitmap(logicalW,logicalH,Bitmap.Config.ARGB_8888);low=new Canvas(frame);}
+      frame.eraseColor(Color.TRANSPARENT);paintPixel();
+      float s=Math.min(getWidth()/(float)logicalW,getHeight()/(float)logicalH);
+      float left=(getWidth()-logicalW*s)/2f,top=(getHeight()-logicalH*s)/2f;
+      canvas.drawBitmap(frame,null,new RectF(left,top,left+logicalW*s,top+logicalH*s),blit);
+    }
+    void sparkle(int x,int y,int color){block(color,x-1,y-4,3,9);block(color,x-4,y-1,9,3);block(Color.WHITE,x,y,1,1);}
+  }
+  class BusinessArt extends PixelView {
+    int index;
+    BusinessArt(Context ctx,int i){super(ctx,64,64);index=i;}
+    protected void paintPixel(){
+      frame(0xff152438);
+      for(int y=8;y<50;y+=9)block(0xff263e57,4+(y*7)%51,y,6,2);
+      block(0xffe3bb74,47,8,8,8);block(0xfff5dba0,49,10,4,4);
+      block(0xff2c3644,3,52,58,9);
+      if(index<2){
+        block(0xffa27d56,9,36,46,18);block(0xffe8c48a,13,40,38,9);
+        for(int i=0;i<3;i++)block(0xff6c5146,15+i*12,47,7,4);
+      }else if(index<6){
+        block(0xff141f2f,8,25,50,30);block(0xffd9b69b,11,27,44,25);
+        block(index==2?0xffdb7453:0xffa9c2ca,7,23,52,9);
+        for(int x=14;x<53;x+=13){block(0xff283f57,x,36,9,14);block(0xfff1c779,x+2,38,4,5);}
+        block(0xffbd8652,29,45,7,8);
       }else{
-        box(canvas,0xff738b9e,16,13,84,81,3);
-        for(int y=23;y<76;y+=14)for(int x=25;x<79;x+=16)box(canvas,(x+y)%3==0?0xfff6d382:0xff9bd5e3,x,y,x+9,y+8,1);
-        if(index>=9){box(canvas,0xffb9c4cc,43,2,57,14,2);box(canvas,0xffd6ad5a,38,0,62,5,2);}
+        block(0xff0d1728,9,8,47,47);block(0xff788ea5,12,11,41,42);
+        for(int y=14;y<49;y+=8)for(int x=16;x<50;x+=9)block((x+y)%3==0?0xffffd48a:0xff9dc5df,x,y,5,5);
+        if(index>=9){block(0xfff4c974,27,3,10,6);block(0xffffe6a8,30,1,4,3);}
       }
-      line(canvas,0xffc99d55,6,81,94,81,2);
-      canvas.restore();
+      block(0xffd6ad66,4,56,56,2);
     }
   }
-  class MineView extends View {
-    Paint p=new Paint(3);
-    MineView(Context ctx){super(ctx);setOnClickListener(v->{dig();save();render();});}
-    void box(Canvas c,int color,float l,float t,float r,float b){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRect(l,t,r,b,p);}
-    void gem(Canvas c,float x,float y,float size,int color){
-      android.graphics.Path path=new android.graphics.Path();path.moveTo(x,y-size);path.lineTo(x+size*.72f,y-size*.2f);path.lineTo(x+size*.4f,y+size);path.lineTo(x-size*.45f,y+size*.8f);path.lineTo(x-size*.8f,y-size*.2f);path.close();
-      p.setColor(color);p.setStyle(Paint.Style.FILL);p.setShadowLayer(14,0,0,color);c.drawPath(path,p);p.clearShadowLayer();
-      p.setColor(0x99ffffff);p.setStrokeWidth(2);c.drawLine(x,y-size,x,y+size*.7f,p);
-    }
-    protected void onDraw(Canvas canvas){
-      float scale=Math.min(getWidth()/340f,getHeight()/310f);canvas.save();canvas.translate((getWidth()-340*scale)/2f,(getHeight()-310*scale)/2f);canvas.scale(scale,scale);
+  class MineView extends PixelView {
+    MineView(Context ctx){super(ctx,160,144);setOnClickListener(v->{dig();save();render();});}
+    protected void paintPixel(){
       int zone=(depth/100)%5;
-      int[] top={0xff26374e,0xff40334d,0xff254b4a,0xff523b32,0xff312a57};
-      int[] bottom={0xff080e20,0xff180d2b,0xff081f26,0xff26120d,0xff100d28};
-      p.setShader(new android.graphics.LinearGradient(0,0,0,310,top[zone],bottom[zone],android.graphics.Shader.TileMode.CLAMP));
-      canvas.drawRoundRect(new RectF(0,0,340,310),22,22,p);p.setShader(null);
-      for(int i=0;i<24;i++){int x=(i*73+19)%340,y=(i*97+31)%310;box(canvas,0xff31445d,x,y,x+17,y+9);}
-      int[] colors={0xff40d9ff,0xff8a77ff,0xffffd76e,0xfff06ec5};
-      for(int i=0;i<15;i++){float x=24+(i*67)%300,y=45+(i*79)%230;gem(canvas,x,y,9+(i%3)*5,colors[(i+depth/100)%4]);}
-      // helmet and headlamp
-      p.setColor(0xffb6c7d8);canvas.drawCircle(166,153,24,p);
-      p.setColor(0xffe9b887);canvas.drawCircle(166,158,19,p);
-      p.setColor(0xffe6ac45);canvas.drawArc(new RectF(143,132,190,156),180,180,false,p);
-      p.setColor(0xfffff4ad);p.setShadowLayer(15,0,0,0xffffe399);canvas.drawCircle(183,140,7,p);p.clearShadowLayer();
-      p.setColor(0xff5e8498);canvas.drawRoundRect(new RectF(142,182,191,240),12,12,p);
-      p.setColor(0xff303d53);canvas.drawRoundRect(new RectF(145,234,160,263),5,5,p);canvas.drawRoundRect(new RectF(175,234,190,263),5,5,p);
-      p.setColor(0xffc0cbd5);p.setStrokeWidth(9);p.setStrokeCap(Paint.Cap.ROUND);canvas.drawLine(192,198,225,169,p);canvas.drawLine(216,161,246,184,p);
-      p.setColor(0xffffd166);p.setTextSize(18);p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextAlign(Paint.Align.CENTER);canvas.drawText("UNDERGROUND  ·  "+depth+"F",170,36,p);
-      p.setColor(0xffdcecff);p.setTextSize(14);canvas.drawText("터치해서 굴착",170,290,p);
-      canvas.restore();
+      int[] caves={0xff1b3047,0xff302342,0xff143b3c,0xff3e2a2a,0xff252044};
+      int[] stones={0xff38536c,0xff604c75,0xff347068,0xff77503e,0xff524576};
+      frame(caves[zone]);
+      for(int i=0;i<46;i++){int x=(i*41+7)%154,y=(i*59+11)%136;block(stones[zone],x,y,3+i%5,2+i%3);}
+      int[] gems={0xff50d8ff,0xffaa7bff,0xffffd76b,0xff64efbb};
+      for(int i=0;i<13;i++){int x=8+(i*47)%143,y=23+(i*67)%104,col=gems[(i+zone)%4];block(col,x,y,5,10);block(col,x-3,y+3,11,4);block(Color.WHITE,x+1,y+1,2,3);}
+      // Pixel miner with headlamp, helmet, overalls, arms and pickaxe.
+      block(0xff0a1725,65,85,34,35);block(0xffe6b18a,72,55,20,20);
+      block(0xffe9b94f,68,48,28,9);block(0xfff7d877,75,45,14,4);
+      block(0xfffff5bb,92,50,6,6);block(0xff4d718d,67,78,31,30);
+      block(0xff9dc6d5,70,81,24,5);block(0xff26394e,70,108,11,15);block(0xff26394e,87,108,11,15);
+      block(0xffb78065,60,84,8,19);block(0xffb78065,98,82,8,16);
+      block(0xffc8d7df,105,78,31,4);block(0xffc8d7df,128,68,4,24);
+      block(0xffe5bb78,69,120,14,5);block(0xffe5bb78,85,120,14,5);
+      sparkle(27,32,0xffb5eeff);sparkle(133,43,0xffffd66f);
+      textPixel("DEPTH "+depth+"F",80,13,0xffffd78e,9);
+      textPixel("TAP TO MINE",80,137,0xffe3eafa,9);
     }
   }
-  Runnable ticker=new Runnable(){public void run(){
-    long now=System.currentTimeMillis();double sec=Math.min(5,(now-lastTick)/1000.0);lastTick=now;
-    if(sec>0){earn(passive()*sec);if(drill>1){int digs=(int)Math.min(20,Math.floor((drill-1)*sec));for(int i=0;i<digs;i++)dig();}}
-    if(now-lastSave>1000){stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");lastSave=now;}
-    if(now%5000<1100)save();
-    handler.postDelayed(this,1000);
-  }};
-  class HeroView extends View {
-    Paint p=new Paint(3);float pulse=0;long tapTime=0;
-    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());totalTaps++;pulse=1;tapTime=System.currentTimeMillis();notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
-    void rect(Canvas c,int color,float l,float t,float r,float b,float rad){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),rad,rad,p);}
-    void circ(Canvas c,int color,float x,float y,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawCircle(x,y,radius,p);}
-    void line(Canvas c,int color,float x,float y,float xx,float yy,float w){p.setColor(color);p.setStrokeWidth(w);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x,y,xx,yy,p);}
-    void txt(Canvas c,String s,int color,float x,float y,int size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(s,x,y,p);}
-    protected void onDraw(Canvas original){
-      super.onDraw(original);Canvas c=original;float scale=Math.min(getWidth()/340f,getHeight()/410f);c.save();c.translate((getWidth()-340*scale)/2f,(getHeight()-410*scale)/2f);c.scale(scale,scale);
-      rect(c,0xff18273c,0,0,340,410,26);
-      rect(c,0xff273950,12,12,328,398,22);
-      p.setShader(new android.graphics.LinearGradient(0,0,0,410,0xff41516b,0xff142234,android.graphics.Shader.TileMode.CLAMP));c.drawRoundRect(new RectF(18,18,322,392),18,18,p);p.setShader(null);
-      circ(c,0x55ffca7a,260,72,42);circ(c,0x33ffffff,265,70,65);
-      rect(c,0xff1a2937,24,270,316,370,8);
-      for(int i=0;i<10;i++){float x=30+i*31;rect(c,0xff32455a,x,220-(i%3)*24,x+24,302,2);rect(c,0xffe6b65b,x+7,236-(i%3)*24,x+12,243-(i%3)*24,1);}
-      rect(c,0xff45515d,68,318,270,342,8);
-      // legs and worn shoes
-      line(c,0xff292c3a,155,271,134,317,22);line(c,0xff292c3a,185,271,211,317,22);
-      rect(c,0xff141b27,105,313,148,326,7);rect(c,0xff141b27,201,313,243,326,7);
-      // Clothes evolve with the player's progress.
+  class HeroView extends PixelView {
+    long tapTime=0;
+    HeroView(Context ctx){super(ctx,160,192);setOnClickListener(v->{
+      earn(tapIncome());totalTaps++;tapTime=System.currentTimeMillis();
+      notice.setText("+"+fmt(tapIncome())+"원");
+      stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");
+      invalidate();save();
+    });}
+    protected void paintPixel(){
+      frame(0xff25334c);
+      block(0xfff3a76e,0,0,160,70);block(0xffca7d80,0,70,160,35);block(0xff36415b,0,105,160,87);
+      block(0xffffd48a,122,24,19,19);block(0xffffe6a4,126,28,11,11);
+      for(int i=0;i<10;i++){int x=i*17;int h=23+(i*19)%39;block(0xff273448,x,110-h,15,h+42);
+        for(int y=113-h;y<106;y+=9)block(0xfff2c37c,x+4,y,3,4);}
+      block(0xff27313d,0,151,160,41);block(0xff4e4c52,0,155,160,3);
+      block(0xff8a7164,16,103,36,45);block(0xffc5a98c,20,108,28,24);
       int tier=prestige>0?4:money>=1e9?3:money>=1e6?2:money>=10000?1:0;
-      int coat=tier==4?0xff5d3a93:tier==3?0xff192735:tier==2?0xff263c59:tier==1?0xff39786e:0xff8b6955;
-      int sleeve=tier==4?0xff3e266c:tier==3?0xff101c2c:tier==2?0xff1b2e46:tier==1?0xff265a51:0xff695449;
-      rect(c,coat,119,190,220,284,26);
-      line(c,sleeve,126,215,94,275,24);line(c,sleeve,210,215,245,273,24);
-      if(tier>=2){line(c,0xfff4e4b4,170,203,170,266,3);rect(c,0xffd5ac59,164,208,176,226,3);}
-      if(tier==4){circ(c,0x66b18aff,170,148,68);}
-      line(c,0xffcfad88,96,272,87,289,14);line(c,0xffcfad88,244,270,250,290,14);
-      // neck, face, ears
-      rect(c,0xffd9a67d,156,178,187,208,8);circ(c,0xffe6b18a,170,143,48);circ(c,0xffe6b18a,124,151,10);circ(c,0xffe6b18a,215,151,10);
-      // hair
-      circ(c,0xff222333,136,110,27);circ(c,0xff222333,165,96,34);circ(c,0xff222333,196,108,28);
-      rect(c,0xff222333,128,103,210,121,9);
-      line(c,0xff232632,148,145,158,145,3);line(c,0xff232632,185,145,195,145,3);
-      circ(c,0xff232632,155,146,2);circ(c,0xff232632,190,146,2);
-      line(c,0xffa76e62,164,168,182,168,2);
-      // Props change as the character progresses.
-      if(tier<2){rect(c,0xffaabac6,205,271,253,300,7);rect(c,0xffe6c878,207,269,250,277,4);}
-      else {rect(c,0xff2d3a4e,217,268,263,302,6);rect(c,0xffd9b66a,220,268,260,274,3);}
-      if(tier>=3){circ(c,0xffd8ad5d,170,92,8);}
-      txt(c,prestige>0?"환생자 · "+prestige+"회":depth>100?"광산 개척자":"거리의 도전자",0xffffdc89,170,48,17);
-      txt(c,"TAP TO EARN",0xfff7f0de,170,378,17);
-      if(pulse>0){txt(c,"+"+fmt(tapIncome()),0xffffd166,170,82,25);pulse=0;}
+      int[] coats={0xff887061,0xff438777,0xff365a85,0xff27374b,0xff69439b};
+      block(0xff1b2233,66,132,12,22);block(0xff1b2233,86,132,12,22);
+      block(coats[tier],62,93,40,42);block(0xff263044,67,133,11,24);block(0xff263044,88,133,11,24);
+      block(0xff171c2b,63,153,18,7);block(0xff171c2b,87,153,18,7);
+      block(coats[tier],53,98,12,30);block(coats[tier],100,98,12,30);
+      block(0xffe2ac85,54,124,10,9);block(0xffe2ac85,103,124,10,9);
+      block(0xffd9a37c,66,67,33,31);block(0xffd9a37c,73,91,19,10);
+      block(0xff23283b,64,62,37,14);block(0xff23283b,69,56,26,9);block(0xff23283b,61,71,10,14);
+      block(0xff23283b,75,80,4,3);block(0xff23283b,90,80,4,3);block(0xffad716a,80,91,9,2);
+      if(tier>=2){block(0xfff2d7a5,81,99,3,24);block(0xffd4ac62,78,105,9,7);}
+      if(tier==4){sparkle(55,63,0xffd4a1ff);sparkle(108,70,0xffd4a1ff);}
+      block(0xffaab8c4,107,129,24,13);block(0xfff2ce7b,109,127,20,4);
+      textPixel(prestige>0?"REBORN HERO":tier>=3?"TYCOON":"BOTTOM LIFE",80,17,0xffffd888,10);
+      textPixel("TAP TO EARN",80,180,0xfff5e7c8,10);
       if(System.currentTimeMillis()-tapTime<500){
-        for(int i=0;i<5;i++){float angle=(float)(i*1.2566);float dist=38+(System.currentTimeMillis()-tapTime)*.12f;circ(c,0xffffd166,170+(float)Math.cos(angle)*dist,185+(float)Math.sin(angle)*dist,5);}
-        postInvalidateDelayed(32);
+        long age=System.currentTimeMillis()-tapTime;
+        for(int i=0;i<7;i++){double angle=i*6.2831853/7;int radius=(int)(8+age*.045);int x=82+(int)(Math.cos(angle)*radius),y=106+(int)(Math.sin(angle)*radius);block(0xffffd166,x,y,4,4);}
+        textPixel("+"+fmt(tapIncome()),80,42,0xfffff1a4,12);postInvalidateDelayed(32);
       }
-      c.restore();
     }
   }
   void save(){
