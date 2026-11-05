@@ -19,6 +19,8 @@ public class MainActivity extends Activity {
   final int BG=0xff101827, PANEL=0xff202d40, GOLD=0xffffd166, WHITE=0xfff4f6fc, GREEN=0xff64e6b0;
   LinearLayout root, body, header;
   HeroView hero;
+  float density(){return getResources().getDisplayMetrics().density;}
+  int dp(float value){return Math.round(value*density());}
   TextView stats, notice;
   android.content.SharedPreferences prefs;
   Handler handler=new Handler();
@@ -78,8 +80,9 @@ public class MainActivity extends Activity {
   }
   void street(){
     addText(body,"성장 단계  ·  "+rank(),15,GREEN);
+    addText(body,"캐릭터 외형은 보유 자산과 환생에 따라 변해.",13,0xffb5c5d8);
     addText(body,"거리에서 시작하는 인생",23,GOLD);
-    hero=new HeroView(this);body.addView(hero,new LinearLayout.LayoutParams(-1,410));
+    hero=new HeroView(this);body.addView(hero,new LinearLayout.LayoutParams(-1,dp(350)));
     button(body,"터치 수익  +"+fmt(tapIncome())+"원","위 캐릭터를 터치해서 돈을 벌어봐 · 누적 "+fmt(lifetime)+"원",()->{earn(tapIncome());totalTaps++;notice.setText("+"+fmt(tapIncome())+"원 획득!");});
     button(body,"터치 강화 Lv."+tapLevel,"비용 "+fmt(tapCost())+"원 · 터치 수익 증가",()->{if(spend(tapCost()))tapLevel++;});
     button(body,"도우미 고용 "+workers+"명","비용 "+fmt(workerCost())+"원 · 초당 0.5원씩 추가",()->{if(spend(workerCost()))workers++;});
@@ -100,7 +103,7 @@ public class MainActivity extends Activity {
   }
   void mine(){
     addText(body,"뒷산의 무한 광산",23,GOLD);
-    body.addView(new MineView(this),new LinearLayout.LayoutParams(-1,310));
+    body.addView(new MineView(this),new LinearLayout.LayoutParams(-1,dp(275)));
     addText(body,"현재 지하 "+depth+"층 · 굴착력 "+fmt(digDamage())+"\n광석 "+fmt(ore)+"개 · 보석 "+fmt(gems)+"개",16,WHITE);
     button(body,"땅 파기  ⛏","굴착력 "+fmt(digDamage())+" / 필요 "+fmt(digNeed())+" · 층이 깊어질수록 보상 증가",()->dig());
     button(body,"광석 판매","광석 "+fmt(ore)+"개 → "+fmt(ore*5)+"원",()->{earn(ore*5);ore=0;notice.setText("광석 판매 완료!");});
@@ -149,7 +152,7 @@ public class MainActivity extends Activity {
       p.setColor(0x99ffffff);p.setStrokeWidth(2);c.drawLine(x,y-size,x,y+size*.7f,p);
     }
     protected void onDraw(Canvas canvas){
-      float sx=getWidth()/340f,sy=getHeight()/310f;canvas.save();canvas.scale(sx,sy);
+      float scale=Math.min(getWidth()/340f,getHeight()/310f);canvas.save();canvas.translate((getWidth()-340*scale)/2f,(getHeight()-310*scale)/2f);canvas.scale(scale,scale);
       p.setShader(new android.graphics.LinearGradient(0,0,0,310,0xff26374e,0xff080e20,android.graphics.Shader.TileMode.CLAMP));
       canvas.drawRoundRect(new RectF(0,0,340,310),22,22,p);p.setShader(null);
       for(int i=0;i<24;i++){int x=(i*73+19)%340,y=(i*97+31)%310;box(canvas,0xff31445d,x,y,x+17,y+9);}
@@ -163,7 +166,7 @@ public class MainActivity extends Activity {
       p.setColor(0xff5e8498);canvas.drawRoundRect(new RectF(142,182,191,240),12,12,p);
       p.setColor(0xff303d53);canvas.drawRoundRect(new RectF(145,234,160,263),5,5,p);canvas.drawRoundRect(new RectF(175,234,190,263),5,5,p);
       p.setColor(0xffc0cbd5);p.setStrokeWidth(9);p.setStrokeCap(Paint.Cap.ROUND);canvas.drawLine(192,198,225,169,p);canvas.drawLine(216,161,246,184,p);
-      p.setColor(0xffffd166);p.setTextSize(18);p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextAlign(Paint.Align.CENTER);canvas.drawText("UNDERGROUND  ·  "+depth+"F",170,30,p);
+      p.setColor(0xffffd166);p.setTextSize(18);p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextAlign(Paint.Align.CENTER);canvas.drawText("UNDERGROUND  ·  "+depth+"F",170,36,p);
       p.setColor(0xffdcecff);p.setTextSize(14);canvas.drawText("터치해서 굴착",170,290,p);
       canvas.restore();
     }
@@ -176,14 +179,14 @@ public class MainActivity extends Activity {
     handler.postDelayed(this,1000);
   }};
   class HeroView extends View {
-    Paint p=new Paint(3);float pulse=0;
-    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());totalTaps++;pulse=1;notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
+    Paint p=new Paint(3);float pulse=0;long tapTime=0;
+    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());totalTaps++;pulse=1;tapTime=System.currentTimeMillis();notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
     void rect(Canvas c,int color,float l,float t,float r,float b,float rad){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),rad,rad,p);}
     void circ(Canvas c,int color,float x,float y,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawCircle(x,y,radius,p);}
     void line(Canvas c,int color,float x,float y,float xx,float yy,float w){p.setColor(color);p.setStrokeWidth(w);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x,y,xx,yy,p);}
     void txt(Canvas c,String s,int color,float x,float y,int size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-black",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(s,x,y,p);}
     protected void onDraw(Canvas original){
-      super.onDraw(original);Canvas c=original;float sx=getWidth()/340f,sy=getHeight()/410f;c.save();c.scale(sx,sy);
+      super.onDraw(original);Canvas c=original;float scale=Math.min(getWidth()/340f,getHeight()/410f);c.save();c.translate((getWidth()-340*scale)/2f,(getHeight()-410*scale)/2f);c.scale(scale,scale);
       rect(c,0xff18273c,0,0,340,410,26);
       rect(c,0xff273950,12,12,328,398,22);
       p.setShader(new android.graphics.LinearGradient(0,0,0,410,0xff41516b,0xff142234,android.graphics.Shader.TileMode.CLAMP));c.drawRoundRect(new RectF(18,18,322,392),18,18,p);p.setShader(null);
@@ -194,9 +197,14 @@ public class MainActivity extends Activity {
       // legs and worn shoes
       line(c,0xff292c3a,155,271,134,317,22);line(c,0xff292c3a,185,271,211,317,22);
       rect(c,0xff141b27,105,313,148,326,7);rect(c,0xff141b27,201,313,243,326,7);
-      // jacket and sleeves
-      rect(c,0xff8b6955,119,190,220,284,26);
-      line(c,0xff695449,126,215,94,275,24);line(c,0xff695449,210,215,245,273,24);
+      // Clothes evolve with the player's progress.
+      int tier=prestige>0?4:money>=1e9?3:money>=1e6?2:money>=10000?1:0;
+      int coat=tier==4?0xff5d3a93:tier==3?0xff192735:tier==2?0xff263c59:tier==1?0xff39786e:0xff8b6955;
+      int sleeve=tier==4?0xff3e266c:tier==3?0xff101c2c:tier==2?0xff1b2e46:tier==1?0xff265a51:0xff695449;
+      rect(c,coat,119,190,220,284,26);
+      line(c,sleeve,126,215,94,275,24);line(c,sleeve,210,215,245,273,24);
+      if(tier>=2){line(c,0xfff4e4b4,170,203,170,266,3);rect(c,0xffd5ac59,164,208,176,226,3);}
+      if(tier==4){circ(c,0x66b18aff,170,148,68);}
       line(c,0xffcfad88,96,272,87,289,14);line(c,0xffcfad88,244,270,250,290,14);
       // neck, face, ears
       rect(c,0xffd9a67d,156,178,187,208,8);circ(c,0xffe6b18a,170,143,48);circ(c,0xffe6b18a,124,151,10);circ(c,0xffe6b18a,215,151,10);
@@ -206,11 +214,17 @@ public class MainActivity extends Activity {
       line(c,0xff232632,148,145,158,145,3);line(c,0xff232632,185,145,195,145,3);
       circ(c,0xff232632,155,146,2);circ(c,0xff232632,190,146,2);
       line(c,0xffa76e62,164,168,182,168,2);
-      // cup
-      rect(c,0xffaabac6,205,271,253,300,7);rect(c,0xffe6c878,207,269,250,277,4);
+      // Props change as the character progresses.
+      if(tier<2){rect(c,0xffaabac6,205,271,253,300,7);rect(c,0xffe6c878,207,269,250,277,4);}
+      else {rect(c,0xff2d3a4e,217,268,263,302,6);rect(c,0xffd9b66a,220,268,260,274,3);}
+      if(tier>=3){circ(c,0xffd8ad5d,170,92,8);}
       txt(c,prestige>0?"환생자 · "+prestige+"회":depth>100?"광산 개척자":"거리의 도전자",0xffffdc89,170,48,17);
       txt(c,"TAP TO EARN",0xfff7f0de,170,378,17);
       if(pulse>0){txt(c,"+"+fmt(tapIncome()),0xffffd166,170,82,25);pulse=0;}
+      if(System.currentTimeMillis()-tapTime<500){
+        for(int i=0;i<5;i++){float angle=(float)(i*1.2566);float dist=38+(System.currentTimeMillis()-tapTime)*.12f;circ(c,0xffffd166,170+(float)Math.cos(angle)*dist,185+(float)Math.sin(angle)*dist,5);}
+        postInvalidateDelayed(32);
+      }
       c.restore();
     }
   }
