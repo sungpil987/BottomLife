@@ -13,11 +13,10 @@ jobs:
       image: barichello/godot-ci:4.3
     steps:
       - uses: actions/checkout@v4
-      - name: Install Android export templates
+      - name: Check engine and Android SDK
         run: |
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
-          unzip -q /root/.local/share/godot/export_templates/4.3.stable/android_debug.apk -d /tmp/check_template 2>/dev/null || true
-          ls -la /root/.local/share/godot/export_templates/4.3.stable/ || true
+          godot --version
+          test -n "$ANDROID_HOME" || test -n "$ANDROID_SDK_ROOT"
       - name: Import Godot project
         run: godot --headless --path godot --editor --quit
       - name: Export debug APK
