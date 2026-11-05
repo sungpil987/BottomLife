@@ -35,8 +35,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
         save = Gdx.app.getPreferences("bottomlife_libgdx_v1");
-        coins=save.getDouble("coins",0); gems=save.getDouble("gems",0);
-        ore=save.getDouble("ore",0); souls=save.getDouble("souls",0);
+        coins=Double.longBitsToDouble(save.getLong("coins",0L)); gems=Double.longBitsToDouble(save.getLong("gems",0L));
+        ore=Double.longBitsToDouble(save.getLong("ore",0L)); souls=Double.longBitsToDouble(save.getLong("souls",0L));
         tapLevel=save.getInteger("tap",1); workerLevel=save.getInteger("workers",0);
         drillLevel=save.getInteger("drill",1); depth=save.getInteger("depth",1);
         rebirths=save.getInteger("rebirths",0);
@@ -53,8 +53,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double drillCost(){return Math.ceil(30*Math.pow(1.25,drillLevel-1));}
     private double mineCost(){return Math.ceil(10*Math.pow(1.2,depth-1));}
     private void persist(){
-        save.putDouble("coins",coins); save.putDouble("gems",gems);
-        save.putDouble("ore",ore); save.putDouble("souls",souls);
+        save.putLong("coins",Double.doubleToRawLongBits(coins)); save.putLong("gems",Double.doubleToRawLongBits(gems));
+        save.putLong("ore",Double.doubleToRawLongBits(ore)); save.putLong("souls",Double.doubleToRawLongBits(souls));
         save.putInteger("tap",tapLevel); save.putInteger("workers",workerLevel);
         save.putInteger("drill",drillLevel); save.putInteger("depth",depth);
         save.putInteger("rebirths",rebirths);
