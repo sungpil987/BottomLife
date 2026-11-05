@@ -12,6 +12,11 @@ jobs:
     container:
       image: barichello/godot-ci:4.3
     steps:
+      - name: Install required container utilities
+        shell: bash
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl unzip ca-certificates openjdk-17-jdk-headless
       - uses: actions/checkout@v4
       - name: Install Godot 4.3 export templates
         shell: bash
