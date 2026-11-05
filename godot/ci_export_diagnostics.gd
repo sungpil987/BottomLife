@@ -11,7 +11,7 @@ func _initialize() -> void:
             print("SETTING ", key, " = ", settings.get_setting(key))
         else:
             print("SETTING MISSING: ", key)
-    var template_dir = OS.get_data_dir().path_join("export_templates/4.3.stable")
+    var template_dir = OS.get_data_dir().path_join("godot/export_templates/4.3.stable")
     print("TEMPLATES: ", template_dir)
     print("DEBUG TEMPLATE EXISTS: ", FileAccess.file_exists(template_dir.path_join("android_debug.apk")))
     print("RELEASE TEMPLATE EXISTS: ", FileAccess.file_exists(template_dir.path_join("android_release.apk")))
