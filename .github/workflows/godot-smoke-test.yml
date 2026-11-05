@@ -67,6 +67,12 @@ jobs:
           find "$ANDROID_HOME/platforms" -maxdepth 1 -mindepth 1 -type d -print || true
           test -s "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
           test -s /tmp/reborn-debug.keystore
+          echo "Godot version:"
+          godot --version
+          echo "Android templates:"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.3.stable/"
+          echo "Smoke preset:"
+          cat smoke-test/export_presets.cfg
       - name: Confirm Godot settings and export templates
         shell: bash
         run: |
@@ -79,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p smoke-test/build
-          godot --headless --verbose --path smoke-test --export-debug Android build/BottomLife-Smoke.apk
+          godot --headless --editor --verbose --path smoke-test --export-debug Android build/BottomLife-Smoke.apk
           test -s smoke-test/build/BottomLife-Smoke.apk
       - uses: actions/upload-artifact@v4
         with:
