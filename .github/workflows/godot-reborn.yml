@@ -42,6 +42,16 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/tmp/reborn-debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Install matching Android SDK components
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          test -f "$ANDROID_HOME/platforms/android-34/android.jar"
+          test -d "$ANDROID_HOME/build-tools/34.0.0"
       - name: Configure Godot editor export paths
         shell: bash
         run: |
