@@ -39,6 +39,9 @@ jobs:
           keytool -genkeypair -v -keystore /tmp/reborn-debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           test -d "$SDK"
           test -d "${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/tmp/reborn-debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
       - name: Configure Godot editor export paths
         shell: bash
         run: |
@@ -53,6 +56,16 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
+      - name: Validate Android export prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "HOME=$HOME JAVA_HOME=$JAVA_HOME ANDROID_HOME=$ANDROID_HOME"
+          java -version
+          find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d -print || true
+          find "$ANDROID_HOME/platforms" -maxdepth 1 -mindepth 1 -type d -print || true
+          test -s "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
+          test -s /tmp/reborn-debug.keystore
       - name: Import and validate Godot project
         run: godot --headless --path godot --editor --quit
       - name: Export debug APK
@@ -60,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p godot/build
-          godot --headless --path godot --export-debug Android build/BottomLife-Reborn.apk
+          godot --headless --verbose --path godot --export-debug Android build/BottomLife-Reborn.apk
           test -s godot/build/BottomLife-Reborn.apk
       - uses: actions/upload-artifact@v4
         with:
