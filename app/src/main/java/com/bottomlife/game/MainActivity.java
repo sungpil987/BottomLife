@@ -28,6 +28,7 @@ public class MainActivity extends Activity {
   int tab=0;
   long lastSave=0;
   String[] tabs={"거리","사업","광산","환생"};
+  int totalTaps=0, bestDepth=1;
   String[] businesses={"종이컵 구걸","폐지 수집소","붕어빵 노점","편의점","분식집","카페","프랜차이즈","공장","IT 기업","대기업","우주 산업"};
   double[] costs={50,500,5000,50000,500000,5000000,50000000,500000000,5e9,5e10,5e11};
   double[] yields={0.1,1,10,100,1000,10000,100000,1e6,1e7,1e8,1e9};
@@ -76,9 +77,10 @@ public class MainActivity extends Activity {
     if(tab==0)street();else if(tab==1)business();else if(tab==2)mine();else rebirth();
   }
   void street(){
+    addText(body,"성장 단계  ·  "+rank(),15,GREEN);
     addText(body,"거리에서 시작하는 인생",23,GOLD);
     hero=new HeroView(this);body.addView(hero,new LinearLayout.LayoutParams(-1,410));
-    button(body,"터치 수익  +"+fmt(tapIncome())+"원","위 캐릭터를 터치해서 돈을 벌어봐 · 누적 "+fmt(lifetime)+"원",()->{earn(tapIncome());notice.setText("+"+fmt(tapIncome())+"원 획득!");});
+    button(body,"터치 수익  +"+fmt(tapIncome())+"원","위 캐릭터를 터치해서 돈을 벌어봐 · 누적 "+fmt(lifetime)+"원",()->{earn(tapIncome());totalTaps++;notice.setText("+"+fmt(tapIncome())+"원 획득!");});
     button(body,"터치 강화 Lv."+tapLevel,"비용 "+fmt(tapCost())+"원 · 터치 수익 증가",()->{if(spend(tapCost()))tapLevel++;});
     button(body,"도우미 고용 "+workers+"명","비용 "+fmt(workerCost())+"원 · 초당 0.5원씩 추가",()->{if(spend(workerCost()))workers++;});
     button(body,"오늘의 행운","무료 보너스 · 30초에 한 번",()->{
@@ -98,6 +100,7 @@ public class MainActivity extends Activity {
   }
   void mine(){
     addText(body,"뒷산의 무한 광산",23,GOLD);
+    body.addView(new MineView(this),new LinearLayout.LayoutParams(-1,310));
     addText(body,"현재 지하 "+depth+"층 · 굴착력 "+fmt(digDamage())+"\n광석 "+fmt(ore)+"개 · 보석 "+fmt(gems)+"개",16,WHITE);
     button(body,"땅 파기  ⛏","굴착력 "+fmt(digDamage())+" / 필요 "+fmt(digNeed())+" · 층이 깊어질수록 보상 증가",()->dig());
     button(body,"광석 판매","광석 "+fmt(ore)+"개 → "+fmt(ore*5)+"원",()->{earn(ore*5);ore=0;notice.setText("광석 판매 완료!");});
@@ -109,7 +112,7 @@ public class MainActivity extends Activity {
   void dig(){
     double damage=digDamage(),need=digNeed();
     int steps=Math.max(1,(int)Math.min(100,damage/need));
-    depth+=steps;ore+=steps*(1+depth/20.0);
+    depth+=steps;bestDepth=Math.max(bestDepth,depth);ore+=steps*(1+depth/20.0);
     if(random.nextDouble()<Math.min(.5,.05+depth/5000.0)){gems+=1+depth/250;notice.setText("희귀 보석 발견! 지하 "+depth+"층");}
     else notice.setText("지하 "+depth+"층 도달!");
   }
@@ -124,7 +127,46 @@ public class MainActivity extends Activity {
         .setNegativeButton("취소",null).setPositiveButton("환생", (d,w)->{souls+=soulGain();prestige++;money=0;lifetime=0;tapLevel=1;workers=0;for(int i=0;i<owned.length;i++)owned[i]=0;notice.setText("환생 완료! 영구 성장 시작");save();render();}).show();
     });
     button(body,"영혼 강화 Lv."+soulPower,"영혼 "+(soulPower+1)+"개 소모 · 모든 돈 수익 영구 +25%",()->{if(souls>=soulPower+1){souls-=soulPower+1;soulPower++;}else notice.setText("영혼 포인트 부족");});
-    addText(body,"환생을 반복해 더 큰 사업을 사고, 더 깊은 광산을 개척해. 목표는 끝없이 확장돼.",14,WHITE);
+    addText(body,"도전 기록",22,GOLD);
+    addText(body,"총 터치 "+totalTaps+"회  ·  최고 광산 "+bestDepth+"층  ·  환생 "+prestige+"회",15,WHITE);
+    achievement("첫걸음",totalTaps>=100,"터치 100회");
+    achievement("사업가",owned[3]>0,"편의점 보유");
+    achievement("지하 탐험가",bestDepth>=100,"광산 100층 도달");
+    achievement("심연의 개척자",bestDepth>=1000,"광산 1,000층 도달");
+    achievement("새로운 삶",prestige>=1,"첫 환생");
+    achievement("환생의 달인",prestige>=10,"환생 10회");
+    addText(body,"환생을 반복해 더 큰 사업을 사고, 더 깊은 광산을 개척해.",14,WHITE);
+  }
+  String rank(){if(prestige>=10)return "전설의 환생자";if(prestige>=1)return "다시 태어난 자";if(money>=1e9)return "재벌 회장";if(money>=1e6)return "사업가";if(money>=10000)return "자영업자";return "거리의 도전자";}
+  void achievement(String name,boolean done,String goal){addText(body,(done?"[달성] ":"[진행] ")+name+"  ·  "+goal,14,done?GREEN:0xffaebbd0);}
+  class MineView extends View {
+    Paint p=new Paint(3);
+    MineView(Context ctx){super(ctx);setOnClickListener(v->{dig();save();render();});}
+    void box(Canvas c,int color,float l,float t,float r,float b){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRect(l,t,r,b,p);}
+    void gem(Canvas c,float x,float y,float size,int color){
+      android.graphics.Path path=new android.graphics.Path();path.moveTo(x,y-size);path.lineTo(x+size*.72f,y-size*.2f);path.lineTo(x+size*.4f,y+size);path.lineTo(x-size*.45f,y+size*.8f);path.lineTo(x-size*.8f,y-size*.2f);path.close();
+      p.setColor(color);p.setStyle(Paint.Style.FILL);p.setShadowLayer(14,0,0,color);c.drawPath(path,p);p.clearShadowLayer();
+      p.setColor(0x99ffffff);p.setStrokeWidth(2);c.drawLine(x,y-size,x,y+size*.7f,p);
+    }
+    protected void onDraw(Canvas canvas){
+      float sx=getWidth()/340f,sy=getHeight()/310f;canvas.save();canvas.scale(sx,sy);
+      p.setShader(new android.graphics.LinearGradient(0,0,0,310,0xff26374e,0xff080e20,android.graphics.Shader.TileMode.CLAMP));
+      canvas.drawRoundRect(new RectF(0,0,340,310),22,22,p);p.setShader(null);
+      for(int i=0;i<24;i++){int x=(i*73+19)%340,y=(i*97+31)%310;box(canvas,0xff31445d,x,y,x+17,y+9);}
+      int[] colors={0xff40d9ff,0xff8a77ff,0xffffd76e,0xfff06ec5};
+      for(int i=0;i<15;i++){float x=24+(i*67)%300,y=45+(i*79)%230;gem(canvas,x,y,9+(i%3)*5,colors[(i+depth/100)%4]);}
+      // helmet and headlamp
+      p.setColor(0xffb6c7d8);canvas.drawCircle(166,153,24,p);
+      p.setColor(0xffe9b887);canvas.drawCircle(166,158,19,p);
+      p.setColor(0xffe6ac45);canvas.drawArc(new RectF(143,132,190,156),180,180,false,p);
+      p.setColor(0xfffff4ad);p.setShadowLayer(15,0,0,0xffffe399);canvas.drawCircle(183,140,7,p);p.clearShadowLayer();
+      p.setColor(0xff5e8498);canvas.drawRoundRect(new RectF(142,182,191,240),12,12,p);
+      p.setColor(0xff303d53);canvas.drawRoundRect(new RectF(145,234,160,263),5,5,p);canvas.drawRoundRect(new RectF(175,234,190,263),5,5,p);
+      p.setColor(0xffc0cbd5);p.setStrokeWidth(9);p.setStrokeCap(Paint.Cap.ROUND);canvas.drawLine(192,198,225,169,p);canvas.drawLine(216,161,246,184,p);
+      p.setColor(0xffffd166);p.setTextSize(18);p.setTypeface(Typeface.DEFAULT_BOLD);p.setTextAlign(Paint.Align.CENTER);canvas.drawText("UNDERGROUND  ·  "+depth+"F",170,30,p);
+      p.setColor(0xffdcecff);p.setTextSize(14);canvas.drawText("터치해서 굴착",170,290,p);
+      canvas.restore();
+    }
   }
   Runnable ticker=new Runnable(){public void run(){
     long now=System.currentTimeMillis();double sec=Math.min(5,(now-lastTick)/1000.0);lastTick=now;
@@ -135,7 +177,7 @@ public class MainActivity extends Activity {
   }};
   class HeroView extends View {
     Paint p=new Paint(3);float pulse=0;
-    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());pulse=1;notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
+    HeroView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setOnClickListener(v->{earn(tapIncome());totalTaps++;pulse=1;notice.setText("+"+fmt(tapIncome())+"원");stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");invalidate();save();});}
     void rect(Canvas c,int color,float l,float t,float r,float b,float rad){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(l,t,r,b),rad,rad,p);}
     void circ(Canvas c,int color,float x,float y,float radius){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawCircle(x,y,radius,p);}
     void line(Canvas c,int color,float x,float y,float xx,float yy,float w){p.setColor(color);p.setStrokeWidth(w);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x,y,xx,yy,p);}
@@ -173,12 +215,12 @@ public class MainActivity extends Activity {
     }
   }
   void save(){
-    try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);
+    try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);j.put("totalTaps",totalTaps);j.put("bestDepth",bestDepth);
       org.json.JSONArray a=new org.json.JSONArray();for(int v:owned)a.put(v);j.put("owned",a);prefs.edit().putString("state",j.toString()).putLong("savedAt",System.currentTimeMillis()).apply();
     }catch(Exception ignored){}
   }
   void load(){
-    try{JSONObject j=new JSONObject(prefs.getString("state","{}"));money=j.optDouble("money",0);lifetime=j.optDouble("lifetime",0);gems=j.optDouble("gems",0);ore=j.optDouble("ore",0);souls=j.optDouble("souls",0);tapLevel=j.optInt("tapLevel",1);workers=j.optInt("workers",0);drill=j.optInt("drill",1);depth=j.optInt("depth",1);prestige=j.optInt("prestige",0);soulPower=j.optInt("soulPower",0);pick=j.optInt("pick",1);
+    try{JSONObject j=new JSONObject(prefs.getString("state","{}"));money=j.optDouble("money",0);lifetime=j.optDouble("lifetime",0);gems=j.optDouble("gems",0);ore=j.optDouble("ore",0);souls=j.optDouble("souls",0);tapLevel=j.optInt("tapLevel",1);workers=j.optInt("workers",0);drill=j.optInt("drill",1);depth=j.optInt("depth",1);prestige=j.optInt("prestige",0);soulPower=j.optInt("soulPower",0);pick=j.optInt("pick",1);totalTaps=j.optInt("totalTaps",0);bestDepth=j.optInt("bestDepth",depth);
       org.json.JSONArray a=j.optJSONArray("owned");if(a!=null)for(int i=0;i<Math.min(a.length(),owned.length);i++)owned[i]=a.optInt(i);
       long elapsed=Math.max(0,Math.min(8*3600,(System.currentTimeMillis()-prefs.getLong("savedAt",System.currentTimeMillis()))/1000));earn(passive()*elapsed);
     }catch(Exception ignored){}
