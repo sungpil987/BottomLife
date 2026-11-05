@@ -30,7 +30,10 @@ public class MainActivity extends Activity {
   int tab=0;
   long lastSave=0;
   String[] tabs={"거리","사업","광산","환생"};
-  int totalTaps=0, bestDepth=1;
+  int totalTaps=0, bestDepth=1, questClaims=0;
+  int[] relics=new int[8];
+  String[] relicNames={"녹슨 반지","고대 동전","푸른 수정","황금 해골","별빛 조각","심연의 나침반","왕의 인장","영원의 심장"};
+  int[] relicFloors={1,30,100,250,500,1000,2000,5000};
   String[] businesses={"종이컵 구걸","폐지 수집소","붕어빵 노점","편의점","분식집","카페","프랜차이즈","공장","IT 기업","대기업","우주 산업"};
   double[] costs={50,500,5000,50000,500000,5000000,50000000,500000000,5e9,5e10,5e11};
   double[] yields={0.1,1,10,100,1000,10000,100000,1e6,1e7,1e8,1e9};
@@ -96,9 +99,15 @@ public class MainActivity extends Activity {
     addText(body,"목표: 사업을 키우고, 광산을 파고, 환생해서 영구적으로 강해지자.",14,0xffb5c5d8);
   }
   void business(){
-    addText(body,"사업 제국",23,GOLD);addText(body,"사업은 초당 자동 수익을 생산해. 많이 사면 구매 비용이 올라가.",14,WHITE);
+    addText(body,"사업 제국",23,GOLD);addText(body,"초당 수익 "+fmt(passive())+"원 · 사업 총 "+businessCount()+"개",15,GREEN);
+    addText(body,"사업을 늘려 자동 수익을 키우고 더 높은 등급을 해금해.",14,WHITE);
     for(int i=0;i<businesses.length;i++){final int j=i;
-      button(body,businesses[i]+"  ×"+owned[i],"구매 "+fmt(businessCost(i))+"원  |  개당 초당 "+fmt(yields[i]*multi())+"원",()->{if(spend(businessCost(j)))owned[j]++;});
+      String symbol=i<2?"◈":i<5?"◆":i<8?"✦":"★";
+      String state=money>=businessCost(i)?"구매 가능":"목표 "+fmt(businessCost(i))+"원";
+      button(body,symbol+"  "+businesses[i]+"  Lv."+owned[i],
+        "초당 +"+fmt(yields[i]*multi())+"원  ·  "+state,
+        ()->{if(spend(businessCost(j))){owned[j]++;notice.setText(businesses[j]+" 사업 확장!");}});
+
     }
   }
   void mine(){
@@ -110,12 +119,18 @@ public class MainActivity extends Activity {
     button(body,"곡괭이 강화 Lv."+pick,"비용 "+fmt(pickCost())+"원 · 굴착력 크게 증가",()->{if(spend(pickCost()))pick++;});
     button(body,"자동 드릴 Lv."+drill,"비용 "+fmt(drillCost())+"원 · 초당 자동 굴착",()->{if(spend(drillCost()))drill++;});
     button(body,"보석 감정","보석 10개를 5000원으로 교환",()->{if(gems>=10){gems-=10;earn(5000);notice.setText("보석 감정 성공");}else notice.setText("보석이 10개 필요해");});
-    addText(body,"희귀 보석은 층이 깊어질수록 더 자주 발견돼. 드릴은 게임 실행 중 자동으로 광산을 파.",13,0xffb5c5d8);
+    addText(body,"광산 유물 도감",22,GOLD);
+    for(int i=0;i<relics.length;i++){
+      String found=relics[i]>0?"발견 · "+relics[i]+" ("+relics[i]+"개)":"미발견 · "+relicFloors[i]+"층 이상";
+      addText(body,(relics[i]>0?"✦  ":"◇  ")+relicNames[i]+"   "+found,13,relics[i]>0?GOLD:0xffa8b8ca);
+    }
+    addText(body,"깊은 층에서 희귀 유물이 발견돼. 유물은 환생해도 보존돼.",13,0xffb5c5d8);
   }
   void dig(){
     double damage=digDamage(),need=digNeed();
     int steps=Math.max(1,(int)Math.min(100,damage/need));
     depth+=steps;bestDepth=Math.max(bestDepth,depth);ore+=steps*(1+depth/20.0);
+    for(int i=0;i<relics.length;i++)if(depth>=relicFloors[i] && random.nextDouble()<0.004/(1+i*.45)){relics[i]++;notice.setText("희귀 유물 발견! "+relicNames[i]);}
     if(random.nextDouble()<Math.min(.5,.05+depth/5000.0)){gems+=1+depth/250;notice.setText("희귀 보석 발견! 지하 "+depth+"층");}
     else notice.setText("지하 "+depth+"층 도달!");
   }
@@ -130,6 +145,12 @@ public class MainActivity extends Activity {
         .setNegativeButton("취소",null).setPositiveButton("환생", (d,w)->{souls+=soulGain();prestige++;money=0;lifetime=0;tapLevel=1;workers=0;for(int i=0;i<owned.length;i++)owned[i]=0;notice.setText("환생 완료! 영구 성장 시작");save();render();}).show();
     });
     button(body,"영혼 강화 Lv."+soulPower,"영혼 "+(soulPower+1)+"개 소모 · 모든 돈 수익 영구 +25%",()->{if(souls>=soulPower+1){souls-=soulPower+1;soulPower++;}else notice.setText("영혼 포인트 부족");});
+    addText(body,"일일이 아닌 영구 도전",22,GOLD);
+    int next=questClaims+1;
+    int target=next*100;
+    button(body,"도전 "+next+" · 광산 "+target+"층 돌파",
+      "최고 기록 "+bestDepth+"층 · 보상 "+fmt(1000*Math.pow(2,Math.min(questClaims,30)))+"원",
+      ()->{if(bestDepth>=target){earn(1000*Math.pow(2,Math.min(questClaims,30)));questClaims++;notice.setText("도전 보상 수령!");}else notice.setText("광산 "+target+"층에 먼저 도달해!");});
     addText(body,"도전 기록",22,GOLD);
     addText(body,"총 터치 "+totalTaps+"회  ·  최고 광산 "+bestDepth+"층  ·  환생 "+prestige+"회",15,WHITE);
     achievement("첫걸음",totalTaps>=100,"터치 100회");
@@ -140,6 +161,7 @@ public class MainActivity extends Activity {
     achievement("환생의 달인",prestige>=10,"환생 10회");
     addText(body,"환생을 반복해 더 큰 사업을 사고, 더 깊은 광산을 개척해.",14,WHITE);
   }
+  int businessCount(){int n=0;for(int v:owned)n+=v;return n;}
   String rank(){if(prestige>=10)return "전설의 환생자";if(prestige>=1)return "다시 태어난 자";if(money>=1e9)return "재벌 회장";if(money>=1e6)return "사업가";if(money>=10000)return "자영업자";return "거리의 도전자";}
   void achievement(String name,boolean done,String goal){addText(body,(done?"[달성] ":"[진행] ")+name+"  ·  "+goal,14,done?GREEN:0xffaebbd0);}
   class MineView extends View {
@@ -153,7 +175,10 @@ public class MainActivity extends Activity {
     }
     protected void onDraw(Canvas canvas){
       float scale=Math.min(getWidth()/340f,getHeight()/310f);canvas.save();canvas.translate((getWidth()-340*scale)/2f,(getHeight()-310*scale)/2f);canvas.scale(scale,scale);
-      p.setShader(new android.graphics.LinearGradient(0,0,0,310,0xff26374e,0xff080e20,android.graphics.Shader.TileMode.CLAMP));
+      int zone=(depth/100)%5;
+      int[] top={0xff26374e,0xff40334d,0xff254b4a,0xff523b32,0xff312a57};
+      int[] bottom={0xff080e20,0xff180d2b,0xff081f26,0xff26120d,0xff100d28};
+      p.setShader(new android.graphics.LinearGradient(0,0,0,310,top[zone],bottom[zone],android.graphics.Shader.TileMode.CLAMP));
       canvas.drawRoundRect(new RectF(0,0,340,310),22,22,p);p.setShader(null);
       for(int i=0;i<24;i++){int x=(i*73+19)%340,y=(i*97+31)%310;box(canvas,0xff31445d,x,y,x+17,y+9);}
       int[] colors={0xff40d9ff,0xff8a77ff,0xffffd76e,0xfff06ec5};
@@ -173,7 +198,7 @@ public class MainActivity extends Activity {
   }
   Runnable ticker=new Runnable(){public void run(){
     long now=System.currentTimeMillis();double sec=Math.min(5,(now-lastTick)/1000.0);lastTick=now;
-    if(sec>0){earn(passive()*sec);if(tab==2 && drill>1){int digs=(int)Math.min(20,Math.floor((drill-1)*sec));for(int i=0;i<digs;i++)dig();}}
+    if(sec>0){earn(passive()*sec);if(drill>1){int digs=(int)Math.min(20,Math.floor((drill-1)*sec));for(int i=0;i<digs;i++)dig();}}
     if(now-lastSave>1000){stats.setText("보유 "+fmt(money)+"원   |   초당 "+fmt(passive())+"원\n보석 "+fmt(gems)+"개   |   영혼 "+fmt(souls)+"개");lastSave=now;}
     if(now%5000<1100)save();
     handler.postDelayed(this,1000);
@@ -229,12 +254,12 @@ public class MainActivity extends Activity {
     }
   }
   void save(){
-    try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);j.put("totalTaps",totalTaps);j.put("bestDepth",bestDepth);
+    try{JSONObject j=new JSONObject();j.put("money",money);j.put("lifetime",lifetime);j.put("gems",gems);j.put("ore",ore);j.put("souls",souls);j.put("tapLevel",tapLevel);j.put("workers",workers);j.put("drill",drill);j.put("depth",depth);j.put("prestige",prestige);j.put("soulPower",soulPower);j.put("pick",pick);j.put("totalTaps",totalTaps);j.put("bestDepth",bestDepth);j.put("questClaims",questClaims);org.json.JSONArray relicArray=new org.json.JSONArray();for(int r:relics)relicArray.put(r);j.put("relics",relicArray);
       org.json.JSONArray a=new org.json.JSONArray();for(int v:owned)a.put(v);j.put("owned",a);prefs.edit().putString("state",j.toString()).putLong("savedAt",System.currentTimeMillis()).apply();
     }catch(Exception ignored){}
   }
   void load(){
-    try{JSONObject j=new JSONObject(prefs.getString("state","{}"));money=j.optDouble("money",0);lifetime=j.optDouble("lifetime",0);gems=j.optDouble("gems",0);ore=j.optDouble("ore",0);souls=j.optDouble("souls",0);tapLevel=j.optInt("tapLevel",1);workers=j.optInt("workers",0);drill=j.optInt("drill",1);depth=j.optInt("depth",1);prestige=j.optInt("prestige",0);soulPower=j.optInt("soulPower",0);pick=j.optInt("pick",1);totalTaps=j.optInt("totalTaps",0);bestDepth=j.optInt("bestDepth",depth);
+    try{JSONObject j=new JSONObject(prefs.getString("state","{}"));money=j.optDouble("money",0);lifetime=j.optDouble("lifetime",0);gems=j.optDouble("gems",0);ore=j.optDouble("ore",0);souls=j.optDouble("souls",0);tapLevel=j.optInt("tapLevel",1);workers=j.optInt("workers",0);drill=j.optInt("drill",1);depth=j.optInt("depth",1);prestige=j.optInt("prestige",0);soulPower=j.optInt("soulPower",0);pick=j.optInt("pick",1);totalTaps=j.optInt("totalTaps",0);bestDepth=j.optInt("bestDepth",depth);questClaims=j.optInt("questClaims",0);org.json.JSONArray savedRelics=j.optJSONArray("relics");if(savedRelics!=null)for(int i=0;i<Math.min(relics.length,savedRelics.length());i++)relics[i]=savedRelics.optInt(i);
       org.json.JSONArray a=j.optJSONArray("owned");if(a!=null)for(int i=0;i<Math.min(a.length(),owned.length);i++)owned[i]=a.optInt(i);
       long elapsed=Math.max(0,Math.min(8*3600,(System.currentTimeMillis()-prefs.getLong("savedAt",System.currentTimeMillis()))/1000));earn(passive()*elapsed);
     }catch(Exception ignored){}
