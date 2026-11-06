@@ -488,7 +488,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(x<0||x>W||y<0||y>H)return;
         if(screen==5){
             if(y>=350&&y<365){if(x<180)cycleOutfit();else claimMastery();return;}
-            if(y>=365&&y<470){int col=x<180?0:1;int row=y>=420?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
+            if(y>=130&&y<235){int col=x<180?0:1;int row=y>=185?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
             if(y>=290&&y<350){collectReward();return;}
             if(y>=18&&y<85){screen=0;notice="거리 노동";return;}
             return;
@@ -502,7 +502,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=18&&y<=74){screen=0;notice="거리 노동";return;}
             return;
         }
-        if(y>=588&&y<=632){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
+        if(y>=8&&y<=55){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
         if(screen==3){
             if(y>=358&&y<588){growthMode=1-growthMode;notice=growthMode==0?"성장 능력":"임무 보상";return;}
             if(growthMode==0){
@@ -511,12 +511,12 @@ public class BottomLifeGame extends ApplicationAdapter {
                 else if(y>=179&&y<229)upgradeGrowth(2);
                 else if(y>=121&&y<171){growthMode=1;notice="임무 화면";}
                 else if(y>=63&&y<113)collectReward();
-                else if(y>=8&&y<55)screen=0;
+                else if(y>=588&&y<=632)screen=0;
             }else{
                 if(y>=295&&y<345)claimQuest();
                 else if(y>=237&&y<287)collectReward();
                 else if(y>=121&&y<171){growthMode=0;notice="성장 능력";}
-                else if(y>=8&&y<55)screen=0;
+                else if(y>=588&&y<=632)screen=0;
             }
             return;
         }
@@ -528,7 +528,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             }
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=231)hireManager(i);else purchaseShop(i);return;}
-            if(y>=8&&y<55){if(x>=180)claimBusinessContract();else upgradeFranchise();return;}
+            if(y>=588&&y<=632){if(x>=180)claimBusinessContract();else upgradeFranchise();return;}
             return;
         }
         if(screen==2){
@@ -540,7 +540,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=179&&y<229){double sold=ore*(2+depth)*mineSellMultiplier();coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
             if(y>=121&&y<171){claimMineMilestone();return;}
             if(y>=63&&y<113){if(x>=275){mineGearBulk=mineGearBulk==1?5:1;notice="장비 일괄 강화 x"+mineGearBulk;persist();}else upgradeMineGear(mineGearSelected);return;}
-            if(y>=8&&y<55){if(x>=265){mineGearSelected=(mineGearSelected+1)%3;notice=mineGearName(mineGearSelected)+" 선택";}else claimMineBoss();return;}
+            if(y>=588&&y<=632){if(x>=265){mineGearSelected=(mineGearSelected+1)%3;notice=mineGearName(mineGearSelected)+" 선택";}else claimMineBoss();return;}
             return;
         }
         if(screen==0&&x>=260&&y>=472&&y<515){screen=5;notice="콘텐츠 선택";return;}
@@ -558,7 +558,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         else if(y>=179 && y<229){mineOnce(false);}
         else if(y>=121 && y<171)buy(drillCost(),2);
         else if(y>=63 && y<113)buy(mineCost(),3);
-        else if(y>=8 && y<55){screen=4;notice="환생 보상 확인";}
+        else if(y>=588 && y<=632){screen=4;notice="환생 보상 확인";}
     }
 
     private void pixel(Pixmap p,int x,int y,int w,int h,String color){
@@ -873,7 +873,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(20,521,320,97,.17f,.24f,.35f);
             for(int i=0;i<4;i++){
                 int col=i%2,row=i/2;
-                float x=18+col*165,y=420-row*55;
+                float x=18+col*165,y=185-row*55;
                 rect(x,y,158,49,.08f,.12f,.20f);
                 rect(x+3,y+4,152,41,.17f+i*.045f,.23f+i*.035f,.32f+i*.025f);
                 rect(x+8,y+10,32,29,.28f+i*.10f,.48f,.61f-i*.07f);
@@ -912,10 +912,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),26,267);
             label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",26,245);
             label("환생 "+rebirths+"회  영혼 "+fmt(souls),26,223);
-            label("사업",67,449);label("광산",230,449);
-            label("성장",67,394);label("환생",230,394);
+            label("사업",67,214);label("광산",230,214);
+            label("성장",67,159);label("환생",230,159);
             label("출석 보상 받기",83,322);
             label("다음 환생까지 "+fmt(Math.max(0,100000-coins)),25,367);
+            label("아래에서 콘텐츠 선택",60,301);
             label("거리로 돌아가기",83,53);
             batch.end();return;
         }
@@ -932,7 +933,14 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(138,365,84,84,.42f,.26f,.54f);
             rect(145,372,70,70,.66f,.40f,.78f);
             rect(157,384,46,46,.24f,.14f,.39f);
-            rect(18,206,324,109,.09f,.12f,.21f);
+            rect(18,178,324,165,.09f,.12f,.21f);
+            for(int i=0;i<3;i++){
+                float yy=295-i*58;
+                rect(22,yy,316,49,.16f,.18f,.29f);
+                rect(25,yy+4,310,40,.24f,.23f,.34f);
+                rect(285,yy+8,46,30,.54f,.39f,.23f);
+            }
+            rect(22,157,316,21,.35f,.26f,.43f);
             for(int i=0;i<3;i++){
                 float y=278-i*30;
                 rect(26,y,307,25,.17f,.19f,.30f);
@@ -949,9 +957,10 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("새로운 인생을 시작합니다",40,552);
             label("영혼 "+fmt(souls)+"  환생 "+rebirths+"회",35,501);
             label("다음 환생 보상 +"+fmt(rebirthGain()),36,337);
-            label("전체 수익 +"+fmt(souls*15)+"%",37,295);
-            label("터치와 노동자 초기화",37,265);
-            label("사업 성장 능력 유지",37,235);
+            label("전생의 힘 "+soulTalents[0]+" 영혼 "+fmt(soulTalentCost(0)),37,325);
+            label("노동의 달인 "+soulTalents[1]+" 영혼 "+fmt(soulTalentCost(1)),37,267);
+            label("광산의 기억 "+soulTalents[2]+" 영혼 "+fmt(soulTalentCost(2)),37,209);
+            label("직업 승급 "+rebirths+"/"+careerRankTarget(),37,166);
             label(ready?"환생하기":"100K 돈 필요",109,120);
             label("취소  거리로 돌아가기",65,48);
             batch.end();
@@ -962,7 +971,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         rect(12,360,336,152,.10f,.13f,.20f);
         if(flash>0)rect(17,364,326,144,.30f,.29f,.18f);
         // Raised pixel-style upgrade panels.
-        float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
+        float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{590,632}};
         for(int i=0;i<buttons.length;i++){
             float y=buttons[i][0], h=buttons[i][1]-y;
             rect(16,y-3,328,h,.035f,.055f,.09f);
@@ -1033,7 +1042,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         // Upgrade iconography belongs to the non-business screens only.
         if(screen!=1){
-        float[] ys={295,237,179,121,63,8};
+        float[] ys={295,237,179,121,63,590};
         for(int i=0;i<ys.length;i++){
             float y=ys[i];
             rect(24,y+10,30,29,.18f,.27f,.40f);
@@ -1075,8 +1084,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Four navigation tabs with matching touch regions.
         for(int i=0;i<4;i++){
             float x=8+i*88;
-            rect(x,590,84,36,i==screen?.46f:.13f,i==screen?.34f:.19f,i==screen?.20f:.28f);
-            rect(x,590,84,3,i==screen?.97f:.30f,i==screen?.75f:.40f,i==screen?.39f:.51f);
+            rect(x,8,84,44,i==screen?.46f:.13f,i==screen?.34f:.19f,i==screen?.20f:.28f);
+            rect(x,49,84,3,i==screen?.97f:.30f,i==screen?.75f:.40f,i==screen?.39f:.51f);
         }
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
@@ -1091,10 +1100,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
         if(screen==0)label("콘텐츠",274,495);
         if(screen==5)label("의상 "+outfitName(outfitSelected)+"  숙련 "+characterMastery,25,357);
-        label("거리",18,613);
-        label("사업",105,613);
-        label("광산",193,613);
-        label("임무",281,613);
+        label("거리",32,36);
+        label("사업",119,36);
+        label("광산",207,36);
+        label("임무",295,36);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
         label(screen==1?"사업 구매 x"+businessBuyCount+" (터치 변경)":screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
@@ -1105,7 +1114,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth*biomeMultiplier()),58,209);
             label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
             label("지하층 확장 비용 "+fmt(mineCost()),58,93);
-            label("환생 100K  "+rebirths+"회",58,37);
+            label("환생 100K  "+rebirths+"회",58,613);
         } else if(screen==1){
             for(int i=0;i<5;i++){
                 int y=326-i*58;
@@ -1116,7 +1125,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 label("관리 Lv."+managers[i]+(managers[i]>=3?" MAX":" "+fmt(managerCost(i))),237,y+5);
                 label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-14);
             }
-            label("출석 보상 받기",58,37);
+            label("출석 보상 받기",58,613);
         } else if(screen==3){
             if(growthMode==0){
                 label("터치 수익 Lv."+growth[0]+" "+fmt(growthCost(0)),58,325);
@@ -1124,7 +1133,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 label("전체 수익 Lv."+growth[2]+" "+fmt(growthCost(2)),58,209);
                 label("임무 보상 화면",58,151);
                 label("출석 보상 받기",58,93);
-                label("거리로 돌아가기",58,37);
+                label("거리로 돌아가기",58,613);
             }else{
                 label("임무 보상 받기 "+(questTier+1),58,325);
                 label("출석 보상 받기",58,267);
@@ -1140,8 +1149,8 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),58,151);
             label(mineGearName(mineGearSelected)+" x"+mineGearBulk+" "+fmt(mineGearBulkCost(mineGearSelected)),58,93);
             label("x"+mineGearBulk,288,93);
-            label("심층 보상 "+depth+"/"+((mineBossTier+1)*25)+"층",58,37);
-            label("장비 변경",269,37);
+            label("심층 보상 "+depth+"/"+((mineBossTier+1)*25)+"층",58,613);
+            label("장비 변경",269,613);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
         label(notice,18,351);
@@ -1221,8 +1230,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Draw labels last: previously the ore overlay covered reward text.
         if(screen==5){
             batch.begin();
-            label("의상 변경",30,350);
-            label("숙련 보상 "+Math.max(0,totalTaps-characterMasteryBase)+"/"+masteryTarget(),185,350);
+            label("의상 변경",30,357);
+            label("숙련 보상 "+Math.max(0,totalTaps-characterMasteryBase)+"/"+masteryTarget(),185,357);
             batch.end();
         }
         if(screen==4){
@@ -1236,8 +1245,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(screen==1){
             batch.begin();
             label("지점 "+shopNames[franchiseSelected]+" "+franchises[franchiseSelected]+"단계",190,559);
-            label("지점 확장 "+fmt(franchiseCost(franchiseSelected)),28,37);
-            label("사업 계약 "+Math.max(0,businessLevels()-businessContractBase)+"/"+businessContractTarget(),190,37);
+            label("지점 확장 "+fmt(franchiseCost(franchiseSelected)),28,613);
+            label("사업 계약 "+Math.max(0,businessLevels()-businessContractBase)+"/"+businessContractTarget(),190,613);
             batch.end();
         }
         if(screen==2){
