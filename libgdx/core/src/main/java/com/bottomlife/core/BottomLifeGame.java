@@ -316,9 +316,9 @@ public class BottomLifeGame extends ApplicationAdapter {
             int index=koreanChars.indexOf(ch);
             if(index>=0){
                 TextureRegion region=new TextureRegion(koreanAtlas,(index%16)*40,(index/16)*40,40,40);
-                batch.draw(region,cursor,y-4,19,19);
+                batch.draw(region,cursor,y-4,17,17);
             }
-            cursor+=ch<128?10:18;
+            cursor+=ch<128?9:16;
         }
     }
     @Override public void render(){
@@ -350,7 +350,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         for(int i=0;i<buttons.length;i++){
             float y=buttons[i][0], h=buttons[i][1]-y;
             rect(16,y-3,328,h,.035f,.055f,.09f);
-            rect(16,y,328,h,i==5?.41f:.16f,i==5?.26f:.23f,i==5?.22f:.34f);
+            rect(16,y,328,h,i==5?.35f:.12f,i==5?.20f:.17f,i==5?.16f:.26f);
+            rect(19,y+5,322,h-13,i==5?.28f:.16f,i==5?.18f:.24f,i==5?.17f:.34f);
+            rect(19,y+5,322,2,.38f,.47f,.58f);
             rect(16,y+h-5,328,5,i==5?.94f:.28f,i==5?.65f:.39f,i==5?.32f:.49f);
             rect(24,y+10,25,25,i==5?.96f:.83f,i==5?.68f:.61f,i==5?.35f:.33f);
             rect(29,y+15,15,15,.18f,.23f,.31f);
@@ -364,6 +366,25 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(screen==2&&i==0)canBuy=coins>=drillCost();
             if(screen==2&&i==1)canBuy=coins>=mineCost();
             rect(331,y+10,4,29,canBuy?.25f:.68f,canBuy?.83f:.29f,canBuy?.50f:.27f);
+        }
+        // Street lighting and gem glints, drawn as crisp pixel details.
+        if(screen==0){
+            for(int i=0;i<8;i++){
+                float x=24+i*42;
+                rect(x,374,24,2,.58f,.50f,.42f);
+                rect(x+4,381,17,2,.24f,.28f,.37f);
+            }
+            float glow=(float)(.6+.3*Math.sin(elapsed*3));
+            rect(47,469,9,20,.87f,.57f,.27f);
+            rect(49,474,5,12,1f,glow,.42f);
+            rect(299,469,9,20,.87f,.57f,.27f);
+            rect(301,474,5,12,1f,glow,.42f);
+        }else if(screen==2){
+            for(int i=0;i<9;i++){
+                float x=30+i*35,y=390+(i*17)%90;
+                rect(x,y,7,13,.29f,.72f,.91f);
+                rect(x+2,y+2,3,8,.76f,.93f,1f);
+            }
         }
         // Four navigation tabs with matching touch regions.
         for(int i=0;i<4;i++){
