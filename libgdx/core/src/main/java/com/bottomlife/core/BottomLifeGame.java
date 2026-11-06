@@ -22,6 +22,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private BitmapFont font;
     private Texture koreanAtlas;
     private Texture streetSprite, mineSprite, shopSprite;
+    private Texture[] actors=new Texture[4];
     private String koreanChars;
     private OrthographicCamera camera;
     private Viewport viewport;
@@ -58,6 +59,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         streetSprite=makePixelScene(0);
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
+        for(int i=0;i<4;i++)actors[i]=makeActor(i);
         camera = new OrthographicCamera();
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
@@ -246,25 +248,34 @@ public class BottomLifeGame extends ApplicationAdapter {
             pixel(p,131,59,35,29,"213748");
             pixel(p,0,102,180,2,"a99a76");
         }
-        // Character silhouette, clothing, hair and face drawn at true pixel resolution.
-        int x=85,y=56;
-        pixel(p,x-8,y+42,7,14,"202331");pixel(p,x+3,y+42,7,14,"202331");
-        pixel(p,x-12,y+20,26,26,mode==1?"a37b4a":mode==2?"6e9ca6":"7e827e");
-        pixel(p,x-16,y+24,5,19,"c79a77");pixel(p,x+14,y+24,5,19,"c79a77");
-        pixel(p,x-9,y+5,20,18,"e6b18b");
-        pixel(p,x-11,y+2,23,8,"24212c");
-        pixel(p,x-13,y+7,8,12,"24212c");
-        pixel(p,x-5,y+15,3,3,"252b35");pixel(p,x+6,y+15,3,3,"252b35");
-        pixel(p,x-1,y+22,6,2,"8d5551");
-        if(mode==1){
-            pixel(p,x-14,y-1,29,7,"a9a69a");
-            pixel(p,x-10,y-5,22,5,"454954");
-            pixel(p,x+19,y+30,3,22,"b6a2a2");
-            pixel(p,x+14,y+29,13,4,"c3a8a2");
-        }
         for(int i=0;i<18;i++){
             int sx=random.nextInt(176),sy=random.nextInt(90);
             if(sx<65||sx>118)pixel(p,sx,sy,2,2,mode==1?"6fd8ff":"b3a18a");
+        }
+        Texture t=new Texture(p);
+        t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
+        p.dispose();return t;
+    }
+    private Texture makeActor(int variant){
+        Pixmap p=new Pixmap(40,64,Pixmap.Format.RGBA8888);
+        p.setColor(0,0,0,0);p.fill();
+        boolean rich=variant>=2, walk=variant%2==1;
+        String coat=rich?"27394e":"657d7d";
+        pixel(p,9,53,9,7,"1b2230");pixel(p,23,walk?51:53,9,7,"1b2230");
+        pixel(p,10,42,8,12,"303447");pixel(p,22,42,8,12,"303447");
+        pixel(p,9,25,23,21,"1b2634");pixel(p,11,27,19,18,coat);
+        pixel(p,16,27,8,10,rich?"e8d6b3":"c9a88c");
+        pixel(p,5,walk?31:29,6,16,coat);pixel(p,32,29,5,16,coat);
+        pixel(p,7,walk?44:42,4,5,"dba47e");pixel(p,33,42,4,5,"dba47e");
+        pixel(p,12,10,18,17,"b78362");pixel(p,13,11,16,15,"e3b18b");
+        pixel(p,10,6,22,8,"25202b");pixel(p,10,10,5,9,"25202b");
+        pixel(p,14,7,11,3,"38303a");pixel(p,16,18,3,3,"202b35");
+        pixel(p,26,18,3,3,"202b35");pixel(p,21,23,4,2,"945d59");
+        if(rich){
+            pixel(p,17,27,6,17,"f0e6cf");pixel(p,19,30,3,13,"c6a44e");
+            pixel(p,8,24,25,4,"d6ad54");
+        }else{
+            pixel(p,10,37,5,3,"9d8b76");pixel(p,29,34,4,5,"9b7965");
         }
         Texture t=new Texture(p);
         t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
@@ -326,6 +337,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
+        int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
+        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2,76,113);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
@@ -364,5 +377,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();batch.dispose();shapes.dispose();}
 }
