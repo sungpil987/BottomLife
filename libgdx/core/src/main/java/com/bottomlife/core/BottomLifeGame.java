@@ -53,6 +53,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int growthMode=0;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
+    private final int[] managers=new int[5];
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
     private final double[] shopBase={100,2000,30000,400000,5000000};
     private static final float W=360, H=640;
@@ -106,7 +107,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         achievementFlags=save.getInteger("achievementFlags",0);
         questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
         questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
-        for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
+        for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
@@ -120,14 +121,28 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void upgradeGrowth(int i){double cost=growthCost(i);if(coins<cost){notice="성장 비용 부족!";return;}coins-=cost;growth[i]++;notice="능력 성장 Lv."+growth[i];persist();}
     private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1));}
     private double income(){
-        double total=workerLevel*(1+workerLevel*0.45);
-        for(int i=0;i<shops.length;i++)total+=shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i]);
-        return total*(1+growth[1]*.10)*multiplier()*(1+career*.05);
+        double total=workerLevel*(1+workerLevel*0.45)*multiplier()*(1+career*.05);
+        for(int i=0;i<shops.length;i++)total+=shopIncome(i);
+        return total*(1+growth[1]*.10);
     }
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
     private int shopMilestone(int level){return level>=100?4:level>=50?3:level>=25?2:level>=10?1:0;}
     private int nextShopMilestone(int level){return level<10?10:level<25?25:level<50?50:level<100?100:0;}
-    private double shopIncome(int i){return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*multiplier()*(1+career*.05);}
+    private double shopIncome(int i){
+        double managerBonus=managers[i]==0?1:managers[i]==1?1.5:managers[i]==2?2.25:3.5;
+        return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*managerBonus*multiplier()*(1+career*.05);
+    }
+    private double managerCost(int i){return Math.ceil(shopBase[i]*15*Math.pow(6,managers[i]));}
+    private void hireManager(int i){
+        if(shops[i]<1){notice="사업을 먼저 열어야 해!";return;}
+        if(managers[i]>=3){notice="최고 관리자 고용 완료!";return;}
+        double cost=managerCost(i);
+        if(coins<cost){notice="관리자 고용 자금 부족!";return;}
+        coins-=cost;managers[i]++;
+        notice=shopNames[i]+" 관리자 Lv."+managers[i]+" 고용!";
+        effectTimer=.5f;effectKind=0;effectX=180;effectY=450;
+        persist();
+    }
     private int businessLevels(){int n=0;for(int v:shops)n+=v;return n;}
     private void purchaseShop(int i){
         double price=shopCost(i);
@@ -210,7 +225,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("achievementFlags",achievementFlags);
         save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
         save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
-        for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
+        for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
@@ -266,7 +281,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(screen==1){
             if(y>=358&&y<588){notice="사업 "+businessLevels()+"레벨 초당 +"+fmt(income());return;}
             int[] bottoms={295,237,179,121,63};
-            for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){purchaseShop(i);return;}
+            for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=235)hireManager(i);else purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
             return;
         }
@@ -866,7 +881,8 @@ public class BottomLifeGame extends ApplicationAdapter {
                 int next=nextShopMilestone(shops[i]);
                 label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
-                label(fmt(shopCost(i)),282,y-4);
+                label("구매 "+fmt(shopCost(i)),60,y-30);
+                label(managers[i]>=3?"관리 MAX":"관리 "+fmt(managerCost(i)),237,y-4);
             }
             label("출석 보상 받기",58,37);
         } else if(screen==3){
