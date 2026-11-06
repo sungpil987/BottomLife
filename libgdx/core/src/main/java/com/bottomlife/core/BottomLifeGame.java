@@ -35,7 +35,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private float comboTime;
     private float tapFloatTimer;
     private double lastTapEarned;
-    private int totalTaps;
+    private int totalTaps, achievementFlags;
+    private float autoMineTimer;
     private int screen=0, career=0, claimed=0;
     private final int[] shops=new int[5];
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
@@ -67,6 +68,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         treasures=save.getInteger("treasures",0); missions=save.getInteger("missions",0);
         career=save.getInteger("career",0);claimed=save.getInteger("claimed",0);
         totalTaps=save.getInteger("totalTaps",0);
+        achievementFlags=save.getInteger("achievementFlags",0);
         for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
@@ -74,7 +76,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(seconds>60) notice="오프라인 수익 획득!";
     }
     private double multiplier(){return 1+souls*0.15;}
-    private double tapPower(){return Math.ceil((1+tapLevel*2)*multiplier());}
+    private double tapPower(){return Math.ceil((1+tapLevel*2)*multiplier()*(1+career*.1));}
     private double income(){
         double total=workerLevel*(1+workerLevel*0.45);
         for(int i=0;i<shops.length;i++)total+=shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i]);
@@ -84,7 +86,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void purchaseShop(int i){
         double price=shopCost(i);
         if(coins<price){notice="돈 부족!";return;}
-        coins-=price;shops[i]++;notice=shopNames[i]+" 사업 강화!";persist();
+        coins-=price;shops[i]++;notice=shopNames[i]+" 사업 강화!";checkAchievements();persist();
     }
     private void collectReward(){
         long today=System.currentTimeMillis()/86400000L;
@@ -96,6 +98,17 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double workerCost(){return Math.ceil(50*Math.pow(1.3,workerLevel));}
     private double drillCost(){return Math.ceil(30*Math.pow(1.25,drillLevel-1));}
     private double mineCost(){return Math.ceil(10*Math.pow(1.2,depth-1));}
+    private void checkAchievements(){
+        boolean[] completed={totalTaps>=100,depth>=10,shops[0]>=10,rebirths>=1,treasures>=10};
+        for(int i=0;i<completed.length;i++){
+            if(completed[i] && (achievementFlags&(1<<i))==0){
+                achievementFlags|=1<<i;
+                gems+=i+1;
+                coins+=(i+1)*1000;
+                notice="업적 달성! 보석 +"+(i+1);
+            }
+        }
+    }
     private void persist(){
         save.putLong("coins",Double.doubleToRawLongBits(coins)); save.putLong("gems",Double.doubleToRawLongBits(gems));
         save.putLong("ore",Double.doubleToRawLongBits(ore)); save.putLong("souls",Double.doubleToRawLongBits(souls));
@@ -105,6 +118,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("treasures",treasures); save.putInteger("missions",missions);
         save.putInteger("career",career);save.putInteger("claimed",claimed);
         save.putInteger("totalTaps",totalTaps);
+        save.putInteger("achievementFlags",achievementFlags);
         for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
@@ -123,19 +137,19 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(action==2)drillLevel++;
         if(action==3)depth++;
         notice="강화 성공!";
-        persist();
+        checkAchievements();persist();
     }
     private void input(float x,float y){
         if(x<0||x>W||y<0||y>H)return;
         if(y>=588){screen=x<120?0:x<240?1:2;notice=screen==0?"거리 노동":screen==1?"사업 운영":"광산 탐험";return;}
         if(screen==1){
-            int[] tops={345,287,229,171,113};
-            for(int i=0;i<5;i++)if(y>=tops[i]-50 && y<tops[i]){purchaseShop(i);return;}
+            int[] bottoms={295,237,179,121,63};
+            for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
             return;
         }
         if(screen==2){
-            if(y>=360&&y<=510){ore+=drillLevel*depth*2;coins+=depth*drillLevel;flash=.16f;notice="광산 채굴 성공!";return;}
+            if(y>=358&&y<588){ore+=drillLevel*depth*2;coins+=depth*drillLevel;flash=.16f;notice="광산 채굴 성공!";checkAchievements();return;}
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
             if(y>=179&&y<229){double sold=ore*(2+depth);coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
@@ -148,6 +162,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
             coins+=earned;flash=0.16f;tapFloatTimer=.6f;lastTapEarned=earned;totalTaps++;notice="+"+fmt(earned)+" 돈  콤보 "+combo;
+            checkAchievements();
             if(Math.random()<0.005){gems++;notice="행운! 보석 +1";}
             return;
         }
@@ -174,7 +189,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             double gain=Math.max(1,Math.floor(Math.sqrt(coins/100000)));
             souls+=gain;rebirths++;career=Math.max(career,rebirths);
             coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;
-            notice="환생 성공! 영혼 +"+fmt(gain);persist();
+            notice="환생 성공! 영혼 +"+fmt(gain);checkAchievements();persist();
         }
     }
 
@@ -260,6 +275,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
         timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
+        if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
         if(saveTimer>=10){persist();saveTimer=0;}
         if(Gdx.input.justTouched()){
             touch.set(Gdx.input.getX(),Gdx.input.getY(),0);
@@ -300,7 +316,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
         label(screen==1?"사업 운영":screen==2?"광산 탐험":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":"거리 노동",125,405);
+        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
             label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
