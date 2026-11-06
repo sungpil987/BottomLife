@@ -54,6 +54,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int mineActions=0;
     private int mineMilestoneTier=0;
     private final int[] mineNodeHits=new int[3];
+    private int lastMineLane=-1;
+    private float mineNodeBreakTimer;
     private int mineBiomeCache=-1;
     private int growthMode=0;
     private int businessBuyCount=1;
@@ -253,7 +255,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void mineNode(int lane){
         int type=mineNodeType(lane);
         mineNodeHits[lane]++;
+        lastMineLane=lane;mineNodeBreakTimer=.42f;
+        effectX=72+lane*108;effectY=415;
         mineOnce(true);
+        effectX=72+lane*108;effectY=415;
         double extra=drillLevel*depth*biomeMultiplier()*(type==0?.6:type==1?1.0:type==2?1.7:2.5);
         ore+=extra;
         if(type==1&&mineNodeHits[lane]%5==0){gems+=2;notice="수정석 보너스! 보석 +2";}
@@ -656,7 +661,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;mineNodeBreakTimer=Math.max(0,mineNodeBreakTimer-delta);mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth*biomeMultiplier();autoMineTimer-=5;}}
         if(saveTimer>=10){persist();saveTimer=0;}
@@ -969,9 +974,39 @@ public class BottomLifeGame extends ApplicationAdapter {
         label(notice,18,351);
         batch.end();
         // Overlay particles after the SpriteBatch scene so effects are never hidden behind terrain.
-        if(effectTimer>0||(screen==2&&mineImpactTimer>0)){
+        if(effectTimer>0||(screen==2&&mineImpactTimer>0)||screen==2){
             shapes.setProjectionMatrix(camera.combined);
             shapes.begin(ShapeRenderer.ShapeType.Filled);
+        // Three independent pixel-ore formations with a short shatter animation.
+        if(screen==2){
+            for(int lane=0;lane<3;lane++){
+                int type=mineNodeType(lane);
+                float cx=72+lane*108,cy=414;
+                boolean breaking=lane==lastMineLane&&mineNodeBreakTimer>0;
+                float t=breaking?1-mineNodeBreakTimer/.42f:0;
+                float rr=type==0?.48f:type==1?.31f:type==2?.91f:.66f;
+                float gg=type==0?.62f:type==1?.82f:type==2?.72f:.45f;
+                float bb=type==0?.70f:type==1?.96f:type==2?.29f:.91f;
+                rect(cx-29,cy-22,58,42,.12f,.17f,.23f);
+                rect(cx-25,cy-18,50,34,.20f,.27f,.34f);
+                if(!breaking||t<.18f){
+                    rect(cx-18,cy-14,36,29,rr*.52f,gg*.52f,bb*.52f);
+                    rect(cx-13,cy-7,26,21,rr,gg,bb);
+                    rect(cx-5,cy+2,12,9,Math.min(1,rr+.19f),Math.min(1,gg+.16f),Math.min(1,bb+.09f));
+                    rect(cx-21,cy-4,7,12,rr*.8f,gg*.8f,bb*.8f);
+                    rect(cx+14,cy-10,8,14,rr*.8f,gg*.8f,bb*.8f);
+                }else{
+                    for(int fragment=0;fragment<8;fragment++){
+                        float a=fragment*6.2831853f/8f;
+                        float distance=5+t*32;
+                        float px=cx+(float)Math.cos(a)*distance;
+                        float py=cy+(float)Math.sin(a)*distance-t*15;
+                        rect(px,py,5+(fragment%3),6,rr,gg,bb);
+                    }
+                }
+                rect(cx-26,cy-26,52,3,lane==lastMineLane?.92f:.40f,lane==lastMineLane?.75f:.48f,lane==lastMineLane?.36f:.59f);
+            }
+        }
         if(effectTimer>0){
             float spread=(.5f-effectTimer)*110;
             for(int i=0;i<8;i++){
