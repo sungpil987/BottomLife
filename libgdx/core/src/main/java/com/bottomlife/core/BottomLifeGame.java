@@ -476,6 +476,21 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         if(screen==5){
             rect(8,8,344,624,.04f,.06f,.11f);
+            // Layered skyline, light beams and drifting particles in the content hub.
+            for(int i=0;i<15;i++){
+                float x=i*25-5;
+                float h=35+(i*37)%76;
+                rect(x,502,22,h,.075f,.10f,.17f);
+                for(int j=0;j<4;j++){
+                    float wy=513+j*17;
+                    if(wy<502+h)rect(x+5+(i%2)*4,wy,5,7,.52f,.39f,.22f);
+                }
+            }
+            for(int i=0;i<22;i++){
+                float x=(i*83+17)%330+15;
+                float y=180+(i*47)%320+(float)Math.sin(elapsed*.7f+i)*4;
+                rect(x,y,2+(i%3),2+(i%3),.45f,.54f,.70f);
+            }
             rect(16,516,328,107,.11f,.16f,.26f);
             rect(20,521,320,97,.17f,.24f,.35f);
             for(int i=0;i<4;i++){
@@ -486,7 +501,28 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(x+8,y+10,32,29,.28f+i*.10f,.48f,.61f-i*.07f);
                 rect(x+13,y+15,22,19,.74f,.67f,.46f);
                 rect(x+15,y+18,18,13,.24f,.33f,.41f);
+                // Individual pixel emblems for business, mining, growth and rebirth.
+                if(i==0){
+                    rect(x+11,y+31,26,5,.92f,.49f,.30f);
+                    rect(x+17,y+20,4,10,.98f,.83f,.58f);
+                    rect(x+29,y+20,4,10,.98f,.83f,.58f);
+                }else if(i==1){
+                    rect(x+12,y+24,22,5,.81f,.88f,.95f);
+                    rect(x+22,y+16,4,20,.61f,.41f,.27f);
+                    rect(x+16,y+31,14,4,.36f,.77f,.95f);
+                }else if(i==2){
+                    rect(x+20,y+15,6,21,.98f,.82f,.39f);
+                    rect(x+13,y+25,20,6,.98f,.82f,.39f);
+                    rect(x+18,y+35,10,3,.99f,.91f,.62f);
+                }else{
+                    rect(x+18,y+16,10,22,.75f,.52f,.94f);
+                    rect(x+12,y+22,22,10,.75f,.52f,.94f);
+                    rect(x+21,y+26,4,4,.99f,.88f,1f);
+                }
             }
+            // Progress dashboard; live values are drawn below.
+            rect(18,350,324,10,.10f,.13f,.22f);
+            rect(20,352,Math.min(320,Math.max(2,320f*(float)Math.min(1,coins/100000.0))),6,.77f,.55f,.29f);
             rect(18,288,324,61,.14f,.20f,.29f);
             rect(21,294,318,50,.26f,.36f,.43f);
             rect(18,22,324,60,.14f,.18f,.27f);
@@ -495,9 +531,13 @@ public class BottomLifeGame extends ApplicationAdapter {
             batch.setProjectionMatrix(camera.combined);batch.begin();
             label("콘텐츠",129,589);
             label("거리에서 사업가로 성장하기",26,543);
+            label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),26,493);
+            label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",26,478);
+            label("환생 "+rebirths+"회  영혼 "+fmt(souls),26,462);
             label("사업",67,449);label("광산",230,449);
             label("성장",67,394);label("환생",230,394);
             label("출석 보상 받기",83,322);
+            label("다음 환생까지 "+fmt(Math.max(0,100000-coins)),25,367);
             label("거리로 돌아가기",83,53);
             batch.end();return;
         }
