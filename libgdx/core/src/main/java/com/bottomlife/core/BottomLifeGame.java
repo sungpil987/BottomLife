@@ -24,6 +24,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private Texture koreanAtlas;
     private Texture streetSprite, mineSprite, shopSprite, streetArt;
     private Texture[] actors=new Texture[8];
+    private Texture[] businessPortraits=new Texture[5];
     private Texture streetForeground, mineForeground;
     private Texture pngActor;
     private String koreanChars;
@@ -98,6 +99,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         catch(Exception ex){Gdx.app.error("BottomLife","Street asset unavailable",ex);}
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
+        for(int i=0;i<businessPortraits.length;i++)businessPortraits[i]=makeBusinessPortrait(i);
         streetForeground=makeForeground(0);
         mineForeground=makeForeground(1);
         for(int i=0;i<actors.length;i++)actors[i]=makeActor(i);
@@ -572,6 +574,58 @@ public class BottomLifeGame extends ApplicationAdapter {
 
     private void pixel(Pixmap p,int x,int y,int w,int h,String color){
         p.setColor(Color.valueOf(color));p.fillRectangle(x,y,w,h);
+    }
+    // Distinct, independently rendered storefront thumbnails; not a flattened UI screenshot.
+    private Texture makeBusinessPortrait(int kind){
+        Pixmap p=new Pixmap(80,58,Pixmap.Format.RGBA8888);
+        String[] sky={"1d283a","29243a","182e42","24233f","28314a"};
+        String[] wall={"805348","ad7550","d9d5bf","554b7d","8a6e5d"};
+        String[] sign={"c54e3c","e48748","328b88","6855b5","b58a4b"};
+        pixel(p,0,0,80,58,sky[kind]);
+        java.util.Random rng=new java.util.Random(733+kind*97);
+        for(int i=0;i<7;i++){
+            int x=i*13-3,h=14+rng.nextInt(16);
+            pixel(p,x,34-h,12,h,"354053");
+            for(int j=0;j<3;j++)pixel(p,x+2+j*3,36-h+3,2,3,j%2==0?"c5a078":"7d95a5");
+        }
+        pixel(p,0,48,80,10,"38343c");
+        for(int i=0;i<8;i++)pixel(p,i*11,52,8,1,"6b6260");
+        pixel(p,8,17,64,33,wall[kind]);
+        pixel(p,11,20,58,25,"222c3a");
+        pixel(p,9,12,62,10,sign[kind]);
+        pixel(p,13,14,54,2,"f5d59b");
+        pixel(p,14,23,51,22,"293b48");
+        pixel(p,16,25,47,17,kind==2?"75a4a6":kind==3?"575a96":"8b786d");
+        for(int i=0;i<5;i++){
+            pixel(p,18+i*9,26,6,12,i%2==0?"f5c581":"b0d2cf");
+            pixel(p,20+i*9,29,3,7,kind==3?"b7a1ef":"cf8565");
+        }
+        pixel(p,39,22,4,26,"d9bc8e");
+        pixel(p,11,44,58,3,"b68e65");
+        if(kind==0){
+            pixel(p,4,23,14,23,"5a4038");pixel(p,4,19,20,5,"c46b4c");
+            pixel(p,5,26,11,10,"e6b978");
+        }else if(kind==1){
+            pixel(p,3,28,12,18,"b76b4c");pixel(p,5,31,8,11,"f2c58a");
+            pixel(p,60,28,14,18,"b76b4c");
+        }else if(kind==2){
+            pixel(p,7,18,66,4,"4ba6a0");
+            pixel(p,7,21,66,2,"e4c48e");
+        }else if(kind==3){
+            pixel(p,15,30,49,4,"4e408b");
+            for(int i=0;i<4;i++)pixel(p,18+i*12,36,8,5,"8f9bf3");
+        }else{
+            pixel(p,12,22,57,3,"d8b36e");
+            pixel(p,59,24,9,19,"bb8055");
+            pixel(p,61,27,5,7,"f0d4a4");
+        }
+        for(int i=0;i<12;i++){
+            int x=rng.nextInt(80),y=rng.nextInt(48);
+            pixel(p,x,y,1,1,i%2==0?"f6c57a":"c6b9a6");
+        }
+        Texture t=new Texture(p);
+        t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
+        p.dispose();return t;
     }
     private Texture makePixelScene(int mode){
         Pixmap p=new Pixmap(180,120,Pixmap.Format.RGBA8888);
@@ -1053,14 +1107,14 @@ public class BottomLifeGame extends ApplicationAdapter {
                 float y=295-i*58;
                 rect(17,y+3,324,43,.12f+i*.025f,.16f+i*.02f,.23f+i*.015f);
                 rect(19,y+42,320,3,.60f,.43f,.24f);
-                rect(25,y+11,28,27,.18f,.25f,.35f);
-                rect(27,y+15,24,13,.28f+i*.08f,.42f,.52f-i*.045f);
-                rect(26,y+28,26,7,.74f,.40f+i*.05f,.26f);
-                rect(31,y+17,5,9,.93f,.76f,.50f);
-                rect(42,y+17,5,9,.93f,.76f,.50f);
+                rect(23,y+8,52,35,.08f,.10f,.15f);
+                rect(24,y+9,50,33,.20f,.23f,.30f);
+                rect(24,y+39,50,3,.83f,.58f,.29f);
+                rect(75,y+7,156,34,.13f,.17f,.23f);
+                rect(75,y+39,156,2,.62f,.44f,.25f);
                 boolean canBuy=coins>=bulkShopCost(i);
                 boolean canHire=shops[i]>0&&managers[i]<3&&coins>=managerCost(i);
-                rect(57,y+7,173,34,canBuy?.14f:.10f,canBuy?.29f:.15f,canBuy?.23f:.20f);
+                rect(78,y+9,150,29,canBuy?.17f:.11f,canBuy?.24f:.15f,canBuy?.23f:.20f);
                 rect(231,y+7,108,34,canHire?.19f:.18f,canHire?.42f:.22f,canHire?.33f:.27f);
                 rect(231,y+39,108,3,canHire?.46f:.32f,canHire?.78f:.39f,canHire?.57f:.41f);
             }
@@ -1118,11 +1172,25 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         float shake=screen==2&&mineShakeTimer>0?(float)Math.sin(elapsed*95)*mineShakeTimer*9:0;
         batch.draw(scene,18+shake,369,324,136);
+        if(screen==1){
+            for(int i=0;i<5;i++){
+                float cy=295-i*58;
+                batch.draw(businessPortraits[i],24,cy+9,48,32);
+            }
+        }
         int tier=outfitSelected;
         int actor=tier*2+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         if(screen==0)batch.draw(streetForeground,18,369,324,136);
         if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
+        if(screen==1){
+            for(int i=0;i<5;i++){
+                float yy=295-i*58;
+                label(shopNames[i]+" Lv."+shops[i],82,yy+35);
+                label("초당 +"+fmt(shopIncome(i)),82,yy+17);
+                label(managers[i]>=3?"관리 완료":"관리 Lv."+managers[i],239,yy+28);
+            }
+        }
         if(screen==0)label("콘텐츠",274,495);
         if(screen==5)label("의상 "+outfitName(outfitSelected)+"  숙련 "+characterMastery,25,357);
         label("거리",20,36);
