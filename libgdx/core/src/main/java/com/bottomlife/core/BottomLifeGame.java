@@ -308,7 +308,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(screen==1){
             if(y>=358&&y<588){businessBuyCount=businessBuyCount==1?10:1;notice="사업 일괄 구매 x"+businessBuyCount;persist();return;}
             int[] bottoms={295,237,179,121,63};
-            for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=235)hireManager(i);else purchaseShop(i);return;}
+            for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=231)hireManager(i);else purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
             return;
         }
@@ -796,12 +796,15 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(26,y+28,26,7,.74f,.40f+i*.05f,.26f);
                 rect(31,y+17,5,9,.93f,.76f,.50f);
                 rect(42,y+17,5,9,.93f,.76f,.50f);
-                boolean can=coins>=shopCost(i);
-                rect(279,y+10,60,30,can?.40f:.25f,can?.65f:.28f,can?.25f:.34f);
-                rect(282,y+13,54,24,can?.78f:.42f,can?.58f:.40f,can?.30f:.42f);
+                boolean canBuy=coins>=bulkShopCost(i);
+                boolean canHire=shops[i]>0&&managers[i]<3&&coins>=managerCost(i);
+                rect(57,y+7,173,34,canBuy?.14f:.10f,canBuy?.29f:.15f,canBuy?.23f:.20f);
+                rect(231,y+7,108,34,canHire?.19f:.18f,canHire?.42f:.22f,canHire?.33f:.27f);
+                rect(231,y+39,108,3,canHire?.46f:.32f,canHire?.78f:.39f,canHire?.57f:.41f);
             }
         }
-        // Decorative but functional upgrade card icon glyphs.
+        // Upgrade iconography belongs to the non-business screens only.
+        if(screen!=1){
         float[] ys={295,237,179,121,63,8};
         for(int i=0;i<ys.length;i++){
             float y=ys[i];
@@ -815,6 +818,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             else{rect(36,y+17,6,18,1f,.80f,.37f);rect(29,y+24,20,5,1f,.80f,.37f);}
             rect(280,y+10,58,29,.16f,.48f,.22f);
             rect(283,y+14,52,21,.30f,.79f,.32f);
+        }
         }
         // Growth screen: four career stages with progress bars and milestone nodes.
         if(screen==3){
@@ -878,9 +882,9 @@ public class BottomLifeGame extends ApplicationAdapter {
                 int next=nextShopMilestone(shops[i]);
                 label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
-                label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-23);
-                label("x"+businessBuyCount+" "+fmt(bulkShopCost(i)),60,y-27);
-                label(managers[i]>=3?"관리 MAX":"관리 "+fmt(managerCost(i)),237,y-4);
+                label("구매 x"+businessBuyCount+" "+fmt(bulkShopCost(i)),60,y-27);
+                label("관리 Lv."+managers[i]+(managers[i]>=3?" MAX":" "+fmt(managerCost(i))),237,y+5);
+                label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-14);
             }
             label("출석 보상 받기",58,37);
         } else if(screen==3){
