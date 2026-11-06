@@ -552,6 +552,26 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(280,y+10,58,29,.16f,.48f,.22f);
             rect(283,y+14,52,21,.30f,.79f,.32f);
         }
+        // Growth screen: four career stages with progress bars and milestone nodes.
+        if(screen==3){
+            rect(21,374,318,124,.07f,.10f,.17f);
+            rect(29,405,300,4,.42f,.34f,.29f);
+            int stage=Math.min(3,Math.max(tapLevel/30,rebirths));
+            for(int i=0;i<4;i++){
+                float x=37+i*86;
+                boolean reached=i<=stage;
+                rect(x,395,28,29,reached?.78f:.22f,reached?.58f:.27f,reached?.30f:.39f);
+                rect(x+4,399,20,21,reached?.95f:.13f,reached?.78f:.18f,reached?.47f:.27f);
+                rect(x+10,402,8,14,reached?.42f:.32f,reached?.30f:.38f,reached?.23f:.48f);
+                if(i<3)rect(x+28,406,58,3,reached?.88f:.34f,reached?.65f:.38f,reached?.37f:.48f);
+            }
+            for(int i=0;i<3;i++){
+                float y=295-i*58;
+                rect(20,y+5,317,40,.13f,.18f,.29f);
+                rect(20,y+42,317,3,.68f,.50f,.29f);
+                rect(277,y+11,61,27,coins>=growthCost(i)?.62f:.30f,coins>=growthCost(i)?.46f:.32f,coins>=growthCost(i)?.24f:.38f);
+            }
+        }
         // Four navigation tabs with matching touch regions.
         for(int i=0;i<4;i++){
             float x=8+i*88;
