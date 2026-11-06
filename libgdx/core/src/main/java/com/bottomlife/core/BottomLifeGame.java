@@ -65,6 +65,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int mineBiomeCache=-1;
     private int growthMode=0;
     private int businessBuyCount=1;
+    private final int[] franchises=new int[5];
+    private int franchiseSelected=0;
+    private int businessContractTier=0,businessContractBase=0;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
     private final int[] managers=new int[5];
@@ -133,6 +136,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         expeditionCompleted=Math.max(0,save.getInteger("expeditionCompleted",0));
         mineGearBulk=save.getInteger("mineGearBulk",1)==5?5:1;
         businessBuyCount=save.getInteger("businessBuyCount",1)==10?10:1;
+        franchiseSelected=Math.max(0,Math.min(4,save.getInteger("franchiseSelected",0)));
+        businessContractTier=Math.max(0,save.getInteger("businessContractTier",0));
+        businessContractBase=Math.max(0,save.getInteger("businessContractBase",0));
+        for(int i=0;i<5;i++)franchises[i]=Math.max(0,save.getInteger("franchise"+i,0));
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
@@ -167,9 +174,32 @@ public class BottomLifeGame extends ApplicationAdapter {
     private String shopSpecialName(int i){
         return new String[]{"손님 유입","광산 납품","보물 판매","환생 투자","임무 제휴"}[i];
     }
+    private double franchiseCost(int i){return Math.ceil(shopBase[i]*100*Math.pow(4.5,franchises[i]));}
+    private void upgradeFranchise(){
+        int i=franchiseSelected;
+        if(shops[i]<10){notice=shopNames[i]+" 10레벨 필요";return;}
+        double cost=franchiseCost(i);
+        if(!Double.isFinite(cost)||coins<cost){notice="프랜차이즈 자금 부족!";return;}
+        coins-=cost;franchises[i]++;
+        notice=shopNames[i]+" 지점 확장 "+franchises[i]+"단계!";
+        effectTimer=.5f;effectKind=0;effectX=180;effectY=445;
+        persist();
+    }
+    private int businessContractTarget(){return 5+businessContractTier*3;}
+    private void claimBusinessContract(){
+        int progress=businessLevels()-businessContractBase;
+        if(progress<businessContractTarget()){notice="사업 계약 "+Math.max(0,progress)+"/"+businessContractTarget();return;}
+        businessContractBase=businessLevels();
+        businessContractTier++;
+        int rewardGems=businessContractTier*3;
+        double rewardCoins=businessContractTier*1000.0*Math.max(1,operatingShops());
+        coins+=rewardCoins;gems+=rewardGems;
+        notice="사업 계약 완료! 보석 +"+rewardGems;
+        persist();
+    }
     private double shopIncome(int i){
         double managerBonus=managers[i]==0?1:managers[i]==1?1.5:managers[i]==2?2.25:3.5;
-        return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*managerBonus*shopSpecial(i)*businessSynergy()*multiplier()*(1+career*.05);
+        return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*managerBonus*shopSpecial(i)*businessSynergy()*(1+franchises[i]*.4)*multiplier()*(1+career*.05);
     }
     private double managerCost(int i){return Math.ceil(shopBase[i]*15*Math.pow(6,managers[i]));}
     private void hireManager(int i){
@@ -372,6 +402,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("expeditionCompleted",expeditionCompleted);
         save.putInteger("mineGearBulk",mineGearBulk);
         save.putInteger("businessBuyCount",businessBuyCount);
+        save.putInteger("franchiseSelected",franchiseSelected);
+        save.putInteger("businessContractTier",businessContractTier);
+        save.putInteger("businessContractBase",businessContractBase);
+        for(int i=0;i<5;i++)save.putInteger("franchise"+i,franchises[i]);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
@@ -426,10 +460,14 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==1){
-            if(y>=358&&y<588){businessBuyCount=businessBuyCount==1?10:1;notice="사업 일괄 구매 x"+businessBuyCount;persist();return;}
+            if(y>=358&&y<588){
+                if(x>=250){franchiseSelected=(franchiseSelected+1)%5;notice=shopNames[franchiseSelected]+" 지점 선택";}
+                else {businessBuyCount=businessBuyCount==1?10:1;notice="사업 일괄 구매 x"+businessBuyCount;}
+                persist();return;
+            }
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=231)hireManager(i);else purchaseShop(i);return;}
-            if(y>=8&&y<55){collectReward();return;}
+            if(y>=8&&y<55){if(x>=180)claimBusinessContract();else upgradeFranchise();return;}
             return;
         }
         if(screen==2){
@@ -1119,6 +1157,13 @@ public class BottomLifeGame extends ApplicationAdapter {
             shapes.end();
         }
         // Draw labels last: previously the ore overlay covered reward text.
+        if(screen==1){
+            batch.begin();
+            label("지점 "+shopNames[franchiseSelected]+" "+franchises[franchiseSelected]+"단계",190,559);
+            label("지점 확장 "+fmt(franchiseCost(franchiseSelected)),28,37);
+            label("사업 계약 "+Math.max(0,businessLevels()-businessContractBase)+"/"+businessContractTarget(),190,37);
+            batch.end();
+        }
         if(screen==2){
             batch.begin();
             for(int route=0;route<3;route++){
