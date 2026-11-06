@@ -30,6 +30,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private String notice = "터치해서 돈 획득!";
     private int combo, treasures, missions;
     private float comboTime;
+    private float tapFloatTimer;
+    private double lastTapEarned;
+    private int totalTaps;
     private int screen=0, career=0, claimed=0;
     private final int[] shops=new int[5];
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
@@ -57,6 +60,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         rebirths=save.getInteger("rebirths",0);
         treasures=save.getInteger("treasures",0); missions=save.getInteger("missions",0);
         career=save.getInteger("career",0);claimed=save.getInteger("claimed",0);
+        totalTaps=save.getInteger("totalTaps",0);
         for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
@@ -94,6 +98,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("rebirths",rebirths);
         save.putInteger("treasures",treasures); save.putInteger("missions",missions);
         save.putInteger("career",career);save.putInteger("claimed",claimed);
+        save.putInteger("totalTaps",totalTaps);
         for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
@@ -115,7 +120,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         persist();
     }
     private void input(float x,float y){
-        if(y>=590){screen=x<120?0:x<240?1:2;notice=screen==0?"거리 노동":screen==1?"사업 운영":"광산 탐험";return;}
+        if(x<0||x>W||y<0||y>H)return;
+        if(y>=588){screen=x<120?0:x<240?1:2;notice=screen==0?"거리 노동":screen==1?"사업 운영":"광산 탐험";return;}
         if(screen==1){
             int[] tops={345,287,229,171,113};
             for(int i=0;i<5;i++)if(y>=tops[i]-50 && y<tops[i]){purchaseShop(i);return;}
@@ -132,10 +138,10 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=8&&y<55){screen=0;return;}
             return;
         }
-        if(y>=360 && y<=510){
+        if(y>=358 && y<588){
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
-            coins+=earned;flash=0.16f;notice="+"+fmt(earned)+" 돈  콤보 "+combo;
+            coins+=earned;flash=0.16f;tapFloatTimer=.6f;lastTapEarned=earned;totalTaps++;notice="+"+fmt(earned)+" 돈  콤보 "+combo;
             if(Math.random()<0.005){gems++;notice="행운! 보석 +1";}
             return;
         }
@@ -184,7 +190,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(saveTimer>=10){persist();saveTimer=0;}
         if(Gdx.input.justTouched()){
@@ -278,6 +284,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("출석 보상",58,93);
             label("거리로 돌아가기",58,37);
         }
+        if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
         label(notice,18,351);
         batch.end();
     }
