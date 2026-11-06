@@ -24,6 +24,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private Texture koreanAtlas;
     private Texture streetSprite, mineSprite, shopSprite, streetArt;
     private Texture[] actors=new Texture[8];
+    private Texture streetForeground, mineForeground;
     private Texture pngActor;
     private String koreanChars;
     private OrthographicCamera camera;
@@ -69,6 +70,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         catch(Exception ex){Gdx.app.error("BottomLife","Street asset unavailable",ex);}
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
+        streetForeground=makeForeground(0);
+        mineForeground=makeForeground(1);
         for(int i=0;i<actors.length;i++)actors[i]=makeActor(i);
         try {
             byte[] bytes=java.util.Base64.getDecoder().decode(CHARACTER_PNG);
@@ -422,6 +425,49 @@ public class BottomLifeGame extends ApplicationAdapter {
         t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
         p.dispose();return t;
     }
+    private Texture makeForeground(int mode){
+        Pixmap p=new Pixmap(180,120,Pixmap.Format.RGBA8888);
+        p.setColor(0,0,0,0);p.fill();
+        if(mode==0){
+            // Near-ground cobblestones, railings and street lamps, independent of the actor.
+            pixel(p,0,103,180,17,"242c38");
+            pixel(p,0,103,180,2,"62606a");
+            for(int i=0;i<24;i++){
+                int x=i*9-3;
+                pixel(p,x,108+(i%2)*5,7,1,"565360");
+                pixel(p,x+2,115,4,1,"393d4a");
+            }
+            for(int x:new int[]{5,171}){
+                pixel(p,x,41,3,62,"3a3c48");
+                pixel(p,x-5,40,13,4,"7c5d4b");
+                pixel(p,x-3,43,9,5,"e9b66e");
+                pixel(p,x-2,44,7,3,"fff0ae");
+                pixel(p,x-4,102,12,3,"5b5360");
+            }
+            pixel(p,0,98,38,5,"343945");pixel(p,141,98,39,5,"343945");
+            for(int x=3;x<38;x+=11)pixel(p,x,89,3,12,"55515b");
+            for(int x=145;x<178;x+=11)pixel(p,x,89,3,12,"55515b");
+        }else{
+            // Crystal clusters and foreground rock ledges frame the miner.
+            pixel(p,0,108,180,12,"101626");
+            pixel(p,0,108,180,3,"33384e");
+            for(int i=0;i<16;i++){
+                int x=i*13-5;
+                pixel(p,x,112,11,8,i%3==0?"37334d":"252a41");
+                pixel(p,x+2,111,6,2,"4c4c63");
+            }
+            for(int x:new int[]{7,149}){
+                pixel(p,x,85,17,24,"26253d");
+                pixel(p,x+3,76,9,24,"3a3652");
+                pixel(p,x+6,67,4,22,"45acc8");
+                pixel(p,x+8,73,2,13,"a5edfc");
+                pixel(p,x+1,89,20,4,"454159");
+            }
+        }
+        Texture t=new Texture(p);
+        t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
+        p.dispose();return t;
+    }
     private Texture makeActor(int variant){
         Pixmap p=new Pixmap(48,72,Pixmap.Format.RGBA8888);
         p.setColor(0,0,0,0);p.fill();
@@ -662,6 +708,17 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(x+2,y+2,3,8,.76f,.93f,1f);
             }
         }
+        // Independent scene particles, animated in world space.
+        if(screen==0||screen==2){
+            for(int i=0;i<18;i++){
+                float speed=screen==2?9f:4f;
+                float px=24+(i*59)%312+(float)Math.sin(elapsed*.45f+i)*5;
+                float py=375+((i*43+(int)(elapsed*speed))%124);
+                float shimmer=.55f+.35f*(float)Math.sin(elapsed*2+i);
+                if(screen==0)rect(px,py,2,2,shimmer,.69f,.43f);
+                else rect(px,py,3,3,.22f,shimmer,.95f);
+            }
+        }
         // Business cards have five distinct storefronts and real purchase targets.
         if(screen==1){
             for(int i=0;i<5;i++){
@@ -731,6 +788,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         int tier=Math.min(3,Math.max(Math.max(0,tapLevel/30),rebirths));
         int actor=tier*2+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        if(screen==0)batch.draw(streetForeground,18,369,324,136);
+        if(screen==2)batch.draw(mineForeground,18,369,324,136);
         if(screen==0)label("콘텐츠",274,495);
         label("거리",18,613);
         label("사업",105,613);
@@ -784,5 +843,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
