@@ -24,6 +24,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private Texture koreanAtlas;
     private Texture streetSprite, mineSprite, shopSprite;
     private Texture[] actors=new Texture[4];
+    private Texture pngActor;
     private String koreanChars;
     private OrthographicCamera camera;
     private Viewport viewport;
@@ -48,6 +49,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
     private final double[] shopBase={100,2000,30000,400000,5000000};
     private static final float W=360, H=640;
+    // Standalone authored 48x64 RGBA PNG sprite, embedded for reliable Android packaging.
+    private static final String CHARACTER_PNG="iVBORw0KGgoAAAANSUhEUgAAADAAAABACAYAAABcIPRGAAABT0lEQVR42mNgGAWjYBQMacBIqgYNVYv/tHbUjdsniHYX01CPgVEPjHqAnh6gRwYejYFRD9AZsFDDkJ2dPlRzkHxQDeNoEhr1wFDLAwwMDAyOlVvg7P3tPlRTO5qEhl1/gIGBgeHhuhaaNSlGXDFKtG/tqpvhob7YmJFmDoo9i4jcQ621BC1ioZVDDq+7gVXcNkhjNBPTJQaoHdIk5QHk9I4N0CsPYAPo+YKiGLj0jZmqjtfj+kufPBB79j/BkKJF6I82JYZdKdR9/Q8K//X5G0TrFTXUGI2BUQ+MemDUA6MeGAL1AK6GGy2aEuTYOZqEhlWHhlrNA6p26nENoQxEHsA25EJ2DHBce0m7YDWWoF4MYANugTk0nSvbtX7K6ET3qAdGPTDqgVEPjHqAdhUZAwMDg5qeM1GV2a1LexnJUT+ahEY9MOqBUQ+MemAUEAMAGyZOkFrzLs0AAAAASUVORK5CYII=";
 
     @Override public void create() {
         shapes = new ShapeRenderer();
@@ -63,6 +66,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
         for(int i=0;i<4;i++)actors[i]=makeActor(i);
+        try {
+            byte[] bytes=java.util.Base64.getDecoder().decode(CHARACTER_PNG);
+            Pixmap pix=new Pixmap(bytes,0,bytes.length);
+            pngActor=new Texture(pix);
+            pngActor.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
+            pix.dispose();
+        }catch(Exception e){Gdx.app.error("BottomLife","PNG sprite fallback",e);}
         camera = new OrthographicCamera();
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
@@ -367,7 +377,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
         int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
-        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        batch.draw(pngActor!=null&&rebirths==0?pngActor:actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
@@ -406,5 +416,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
