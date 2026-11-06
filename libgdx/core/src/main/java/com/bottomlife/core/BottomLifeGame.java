@@ -54,6 +54,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int mineActions=0;
     private int mineMilestoneTier=0;
     private final int[] mineNodeHits=new int[3];
+    private final int[] mineGear=new int[3];
+    private int mineGearSelected=0;
+    private int mineBossTier=0;
     private int lastMineLane=-1;
     private float mineNodeBreakTimer;
     private int mineBiomeCache=-1;
@@ -116,7 +119,11 @@ public class BottomLifeGame extends ApplicationAdapter {
         questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
         questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
         mineMilestoneTier=save.getInteger("mineMilestoneTier",mineActions/50);
-        for(int i=0;i<3;i++)mineNodeHits[i]=Math.max(0,save.getInteger("mineNodeHits"+i,0));
+        for(int i=0;i<3;i++){
+            mineNodeHits[i]=Math.max(0,save.getInteger("mineNodeHits"+i,0));
+            mineGear[i]=Math.max(0,save.getInteger("mineGear"+i,0));
+        }
+        mineBossTier=Math.max(0,save.getInteger("mineBossTier",0));
         businessBuyCount=save.getInteger("businessBuyCount",1)==10?10:1;
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
@@ -246,6 +253,28 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=180;effectY=449;effectTimer=.5f;effectKind=0;
         persist();
     }
+    private double mineGearCost(int i){return Math.ceil((i+1)*500.0*Math.pow(2.15,mineGear[i]));}
+    private String mineGearName(int i){return i==0?"강화 곡괭이":i==1?"광물 탐지기":"자동 굴착기";}
+    private void upgradeMineGear(int i){
+        double cost=mineGearCost(i);
+        if(!Double.isFinite(cost)||coins<cost){notice="장비 강화 비용 부족!";return;}
+        coins-=cost;mineGear[i]++;
+        notice=mineGearName(i)+" Lv."+mineGear[i];
+        checkAchievements();persist();
+    }
+    private double mineGearYield(){return 1+mineGear[0]*.15;}
+    private double mineSellMultiplier(){return 1+mineGear[1]*.12;}
+    private void claimMineBoss(){
+        int target=(mineBossTier+1)*25;
+        if(depth<target){notice="지하 "+target+"층 도달 필요";return;}
+        mineBossTier++;
+        int reward=mineBossTier*5;
+        gems+=reward;
+        coins+=depth*drillLevel*mineBossTier*250.0;
+        notice="심층 보상! 보석 +"+reward;
+        effectTimer=.5f;effectKind=0;effectX=180;effectY=448;
+        persist();
+    }
     private int mineNodeType(int lane){
         return Math.floorMod((mineActions/6)+lane*2+mineBiome(),4);
     }
@@ -259,7 +288,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=72+lane*108;effectY=415;
         mineOnce(true);
         effectX=72+lane*108;effectY=415;
-        double extra=drillLevel*depth*biomeMultiplier()*(type==0?.6:type==1?1.0:type==2?1.7:2.5);
+        double extra=drillLevel*depth*biomeMultiplier()*mineGearYield()*(type==0?.6:type==1?1.0:type==2?1.7:2.5);
         ore+=extra;
         if(type==1&&mineNodeHits[lane]%5==0){gems+=2;notice="수정석 보너스! 보석 +2";}
         else if(type==3&&mineNodeHits[lane]%8==0){treasures++;coins+=depth*drillLevel*180;notice="고대석 유물 발견!";}
@@ -272,9 +301,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         mineShakeTimer=.22f;
         mineCombo=mineComboTimer>0?Math.min(30,mineCombo+1):1;
         mineComboTimer=2.2f;
-        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier()*(1+Math.min(.5,(mineCombo-1)*.02));
+        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier()*mineGearYield()*(1+Math.min(.5,(mineCombo-1)*.02));
         ore+=amount;mineActions++;flash=.16f;mineRewardAmount=amount;
-        if(Math.random()<Math.min(.55,.04+depth*.004+mineBiome()*.025)){gems++;mineRewardKind=1;}
+        if(Math.random()<Math.min(.75,.04+depth*.004+mineBiome()*.025+mineGear[1]*.012)){gems++;mineRewardKind=1;}
         if(Math.random()<.06+mineBiome()*.015){
             double bonus=100*depth*drillLevel;
             coins+=bonus;treasures++;mineRewardKind=2;mineRewardAmount=bonus;
@@ -295,7 +324,11 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
         save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
         save.putInteger("mineMilestoneTier",mineMilestoneTier);
-        for(int i=0;i<3;i++)save.putInteger("mineNodeHits"+i,mineNodeHits[i]);
+        for(int i=0;i<3;i++){
+            save.putInteger("mineNodeHits"+i,mineNodeHits[i]);
+            save.putInteger("mineGear"+i,mineGear[i]);
+        }
+        save.putInteger("mineBossTier",mineBossTier);
         save.putInteger("businessBuyCount",businessBuyCount);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
@@ -359,13 +392,14 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         if(screen==2){
             if(y>=369&&y<=505&&x>=18&&x<=342){mineNode(Math.min(2,Math.max(0,(int)((x-18)/108))));return;}
-            if(y>=358&&y<588){mineOnce(true);return;}
+            if(y>=505&&y<588){int gear=Math.min(2,Math.max(0,(int)((x-18)/108)));mineGearSelected=gear;notice=mineGearName(gear)+" Lv."+mineGear[gear];return;}
+            if(y>=358&&y<505){mineOnce(true);return;}
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
-            if(y>=179&&y<229){double sold=ore*(2+depth);coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
+            if(y>=179&&y<229){double sold=ore*(2+depth)*mineSellMultiplier();coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
             if(y>=121&&y<171){claimMineMilestone();return;}
-            if(y>=63&&y<113){collectReward();return;}
-            if(y>=8&&y<55){screen=0;return;}
+            if(y>=63&&y<113){upgradeMineGear(mineGearSelected);return;}
+            if(y>=8&&y<55){claimMineBoss();return;}
             return;
         }
         if(screen==0&&x>=260&&y>=472&&y<515){screen=5;notice="콘텐츠 선택";return;}
@@ -663,7 +697,14 @@ public class BottomLifeGame extends ApplicationAdapter {
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
         timer+=delta;saveTimer+=delta;elapsed+=delta;mineNodeBreakTimer=Math.max(0,mineNodeBreakTimer-delta);mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
-        if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth*biomeMultiplier();autoMineTimer-=5;}}
+        if((workerLevel>=5&&drillLevel>=3)||mineGear[2]>0){
+            autoMineTimer+=delta;
+            float interval=Math.max(1.0f,5.0f-mineGear[2]*.45f);
+            if(autoMineTimer>=interval){
+                ore+=drillLevel*depth*biomeMultiplier()*mineGearYield()*(1+mineGear[2]*.25);
+                autoMineTimer-=interval;
+            }
+        }
         if(saveTimer>=10){persist();saveTimer=0;}
         if(mineBiomeCache!=mineBiome())refreshMineBiome();
         Gdx.gl.glClearColor(.045f,.065f,.11f,1);Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -953,10 +994,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         } else {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
-            label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)),58,209);
+            label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)*mineSellMultiplier()),58,209);
             label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),58,151);
-            label("출석 보상",58,93);
-            label("거리로 돌아가기",58,37);
+            label(mineGearName(mineGearSelected)+" Lv."+mineGear[mineGearSelected]+" "+fmt(mineGearCost(mineGearSelected)),58,93);
+            label("심층 보상 "+depth+"/"+((mineBossTier+1)*25)+"층",58,37);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
         label(notice,18,351);
@@ -1036,6 +1077,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Draw labels last: previously the ore overlay covered reward text.
         if(screen==2){
             batch.begin();
+            for(int gear=0;gear<3;gear++){
+                label(mineGearName(gear)+" "+mineGear[gear],24+gear*108,522);
+            }
             for(int lane=0;lane<3;lane++){
                 int type=mineNodeType(lane);
                 label(mineNodeName(type),35+lane*108,482);
