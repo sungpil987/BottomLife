@@ -125,12 +125,21 @@ public class BottomLifeGame extends ApplicationAdapter {
         return total*(1+growth[1]*.10)*multiplier()*(1+career*.05);
     }
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
-    private double shopIncome(int i){return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*multiplier()*(1+career*.05);}
+    private int shopMilestone(int level){return level>=100?4:level>=50?3:level>=25?2:level>=10?1:0;}
+    private int nextShopMilestone(int level){return level<10?10:level<25?25:level<50?50:level<100?100:0;}
+    private double shopIncome(int i){return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*multiplier()*(1+career*.05);}
     private int businessLevels(){int n=0;for(int v:shops)n+=v;return n;}
     private void purchaseShop(int i){
         double price=shopCost(i);
         if(coins<price){notice="돈 부족!";return;}
-        coins-=price;shops[i]++;notice=shopNames[i]+" Lv."+shops[i]+" 초당 +"+fmt(shopIncome(i));checkAchievements();persist();
+        int oldMilestone=shopMilestone(shops[i]);
+        coins-=price;shops[i]++;
+        if(shopMilestone(shops[i])>oldMilestone){
+            gems+=shopMilestone(shops[i])*2;
+            notice=shopNames[i]+" 돌파! 수익 2배!";
+            effectTimer=.5f;effectKind=0;effectX=180;effectY=449;
+        }else notice=shopNames[i]+" Lv."+shops[i]+" 초당 +"+fmt(shopIncome(i));
+        checkAchievements();persist();
     }
     private void collectReward(){
         long today=System.currentTimeMillis()/86400000L;
@@ -854,7 +863,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         } else if(screen==1){
             for(int i=0;i<5;i++){
                 int y=326-i*58;
-                label(shopNames[i]+" Lv."+shops[i],60,y+5);
+                int next=nextShopMilestone(shops[i]);
+                label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
                 label(fmt(shopCost(i)),282,y-4);
             }
