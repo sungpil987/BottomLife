@@ -45,6 +45,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int screen=0, career=0, claimed=0;
     private int questTier=0, questTapBase=0, questMineBase=0;
     private int mineActions=0;
+    private int growthMode=0;
+    private final int[] growth=new int[3];
     private final int[] shops=new int[5];
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
     private final double[] shopBase={100,2000,30000,400000,5000000};
@@ -98,17 +100,20 @@ public class BottomLifeGame extends ApplicationAdapter {
         questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
         questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
         for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
+        for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
         coins+=seconds*income()*0.5;
         if(seconds>60) notice="오프라인 수익 획득!";
     }
-    private double multiplier(){return 1+souls*0.15;}
-    private double tapPower(){return Math.ceil((1+tapLevel*2)*multiplier()*(1+career*.1));}
+    private double multiplier(){return (1+souls*0.15)*(1+growth[2]*.05);}
+    private double growthCost(int i){return Math.ceil(new double[]{200,800,2500}[i]*Math.pow(1.65,growth[i]));}
+    private void upgradeGrowth(int i){double cost=growthCost(i);if(coins<cost){notice="성장 비용 부족!";return;}coins-=cost;growth[i]++;notice="능력 성장 Lv."+growth[i];persist();}
+    private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1));}
     private double income(){
         double total=workerLevel*(1+workerLevel*0.45);
         for(int i=0;i<shops.length;i++)total+=shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i]);
-        return total*multiplier()*(1+career*.05);
+        return total*(1+growth[1]*.10)*multiplier()*(1+career*.05);
     }
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
     private double shopIncome(int i){return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*multiplier()*(1+career*.05);}
@@ -175,6 +180,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
         save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
         for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
+        for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
     private String fmt(double v) {
@@ -198,7 +204,23 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
         if(y>=588&&y<=632){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
-        if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=8&&y<55){screen=0;}return;}
+        if(screen==3){
+            if(y>=358&&y<588){growthMode=1-growthMode;notice=growthMode==0?"성장 능력":"임무 보상";return;}
+            if(growthMode==0){
+                if(y>=295&&y<345)upgradeGrowth(0);
+                else if(y>=237&&y<287)upgradeGrowth(1);
+                else if(y>=179&&y<229)upgradeGrowth(2);
+                else if(y>=121&&y<171){growthMode=1;notice="임무 화면";}
+                else if(y>=63&&y<113)collectReward();
+                else if(y>=8&&y<55)screen=0;
+            }else{
+                if(y>=295&&y<345)claimQuest();
+                else if(y>=237&&y<287)collectReward();
+                else if(y>=121&&y<171){growthMode=0;notice="성장 능력";}
+                else if(y>=8&&y<55)screen=0;
+            }
+            return;
+        }
         if(screen==1){
             if(y>=358&&y<588){notice="사업 "+businessLevels()+"레벨 초당 +"+fmt(income());return;}
             int[] bottoms={295,237,179,121,63};
@@ -549,7 +571,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("임무",281,613);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label(screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?"성장 임무":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label(screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
         label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
@@ -567,12 +589,21 @@ public class BottomLifeGame extends ApplicationAdapter {
             }
             label("출석 보상 받기",58,37);
         } else if(screen==3){
-            label("임무 보상 받기 "+(questTier+1),58,325);
-            label("출석 보상 받기",58,267);
-            label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,209);
-            label("채굴 "+Math.max(0,mineActions-questMineBase)+"/"+questMineTarget(),58,151);
-            label("완료 "+missions+"  보석 "+fmt(gems),58,93);
-            label("거리로 돌아가기",58,37);
+            if(growthMode==0){
+                label("터치 수익 Lv."+growth[0]+" "+fmt(growthCost(0)),58,325);
+                label("자동 수익 Lv."+growth[1]+" "+fmt(growthCost(1)),58,267);
+                label("전체 수익 Lv."+growth[2]+" "+fmt(growthCost(2)),58,209);
+                label("임무 보상 화면",58,151);
+                label("출석 보상 받기",58,93);
+                label("거리로 돌아가기",58,37);
+            }else{
+                label("임무 보상 받기 "+(questTier+1),58,325);
+                label("출석 보상 받기",58,267);
+                label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,209);
+                label("성장 능력 화면",58,151);
+                label("완료 "+missions+"  보석 "+fmt(gems),58,93);
+                label("거리로 돌아가기",58,37);
+            }
         } else {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
