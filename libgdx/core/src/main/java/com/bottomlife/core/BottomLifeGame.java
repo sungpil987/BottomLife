@@ -38,6 +38,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int totalTaps, achievementFlags;
     private float autoMineTimer;
     private int screen=0, career=0, claimed=0;
+    private int questTier=0, questTapBase=0, questMineBase=0;
+    private int mineActions=0;
     private final int[] shops=new int[5];
     private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
     private final double[] shopBase={100,2000,30000,400000,5000000};
@@ -69,6 +71,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         career=save.getInteger("career",0);claimed=save.getInteger("claimed",0);
         totalTaps=save.getInteger("totalTaps",0);
         achievementFlags=save.getInteger("achievementFlags",0);
+        questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
+        questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
         for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
@@ -109,6 +113,28 @@ public class BottomLifeGame extends ApplicationAdapter {
             }
         }
     }
+    private int questTapTarget(){return 25+questTier*15;}
+    private int questMineTarget(){return 10+questTier*8;}
+    private void claimQuest(){
+        if(totalTaps-questTapBase<questTapTarget()||mineActions-questMineBase<questMineTarget()){
+            notice="임무 목표 미달성!";return;
+        }
+        double reward=500*Math.pow(2,Math.min(40,questTier));
+        coins+=reward;gems+=2+questTier/3;missions++;questTier++;
+        questTapBase=totalTaps;questMineBase=mineActions;
+        notice="임무 완료! 돈 +"+fmt(reward);persist();
+    }
+    private void mineOnce(boolean large){
+        double amount=drillLevel*depth*(large?2:1);
+        ore+=amount;mineActions++;flash=.16f;
+        if(Math.random()<Math.min(.4,.04+depth*.004))gems++;
+        if(Math.random()<.06){
+            double bonus=100*depth*drillLevel;
+            coins+=bonus;treasures++;
+            notice="보물상자 발견! +"+fmt(bonus);
+        }else notice="광물 +"+fmt(amount)+" 획득";
+        checkAchievements();persist();
+    }
     private void persist(){
         save.putLong("coins",Double.doubleToRawLongBits(coins)); save.putLong("gems",Double.doubleToRawLongBits(gems));
         save.putLong("ore",Double.doubleToRawLongBits(ore)); save.putLong("souls",Double.doubleToRawLongBits(souls));
@@ -119,6 +145,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("career",career);save.putInteger("claimed",claimed);
         save.putInteger("totalTaps",totalTaps);
         save.putInteger("achievementFlags",achievementFlags);
+        save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
+        save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
         for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
@@ -141,7 +169,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     private void input(float x,float y){
         if(x<0||x>W||y<0||y>H)return;
-        if(y>=588){screen=x<120?0:x<240?1:2;notice=screen==0?"거리 노동":screen==1?"사업 운영":"광산 탐험";return;}
+        if(y>=588){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
+        if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=179&&y<229){screen=0;}return;}
         if(screen==1){
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){purchaseShop(i);return;}
@@ -149,7 +178,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==2){
-            if(y>=358&&y<588){ore+=drillLevel*depth*2;coins+=depth*drillLevel;flash=.16f;notice="광산 채굴 성공!";checkAchievements();return;}
+            if(y>=358&&y<588){mineOnce(true);return;}
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
             if(y>=179&&y<229){double sold=ore*(2+depth);coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
@@ -168,20 +197,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         if(y>=295 && y<345)buy(tapCost(),0);
         else if(y>=237 && y<287)buy(workerCost(),1);
-        else if(y>=179 && y<229){
-            ore+=drillLevel*depth;
-            if(Math.random()<Math.min(0.45,0.05+depth*0.005))gems++;
-            if(Math.random()<0.08){
-                double bonus=100*depth*drillLevel;
-                coins+=bonus;treasures++;notice="보물상자 발견! +"+fmt(bonus)+" 돈";
-            } else notice="광물 +"+fmt(drillLevel*depth)+" 획득";
-            if(ore>=100){
-                double sold=Math.floor(ore/100)*100;
-                ore-=sold;coins+=sold*(2+depth);
-                notice="광물 자동 판매! +"+fmt(sold*(2+depth))+" 돈";
-            }
-            persist();
-        }
+        else if(y>=179 && y<229){mineOnce(false);}
         else if(y>=121 && y<171)buy(drillCost(),2);
         else if(y>=63 && y<113)buy(mineCost(),3);
         else if(y>=8 && y<55){
@@ -299,24 +315,25 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(24,y+10,25,25,i==5?.96f:.83f,i==5?.68f:.61f,i==5?.35f:.33f);
             rect(29,y+15,15,15,.18f,.23f,.31f);
         }
-        // Visible tab hit targets matching the top navigation touch areas.
-        for(int i=0;i<3;i++){
-            float x=12+i*112;
-            rect(x,590,108,36,i==screen?.46f:.13f,i==screen?.34f:.19f,i==screen?.20f:.28f);
-            rect(x,590,108,3,i==screen?.97f:.30f,i==screen?.75f:.40f,i==screen?.39f:.51f);
+        // Four navigation tabs with matching touch regions.
+        for(int i=0;i<4;i++){
+            float x=8+i*88;
+            rect(x,590,84,36,i==screen?.46f:.13f,i==screen?.34f:.19f,i==screen?.20f:.28f);
+            rect(x,590,84,3,i==screen?.97f:.30f,i==screen?.75f:.40f,i==screen?.39f:.51f);
         }
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
-        label("거리",44,613);
-        label("사업",156,613);
-        label("광산",268,613);
+        label("거리",18,613);
+        label("사업",105,613);
+        label("광산",193,613);
+        label("임무",281,613);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label(screen==1?"사업 운영":screen==2?"광산 탐험":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":rebirths>0?"환생 성장":"거리 노동",125,405);
+        label(screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?"성장 임무":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
             label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
@@ -327,6 +344,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         } else if(screen==1){
             for(int i=0;i<5;i++)label(shopNames[i]+" "+shops[i]+" 비용 "+fmt(shopCost(i)),58,325-i*58);
             label("출석 보상 받기",58,37);
+        } else if(screen==3){
+            label("임무 "+(questTier+1)+" 단계",58,325);
+            label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,267);
+            label("채굴 "+Math.max(0,mineActions-questMineBase)+"/"+questMineTarget(),58,209);
+            label("임무 완료 보상",58,151);
+            label("보석 "+fmt(gems)+"  환생 "+rebirths,58,93);
+            label("거리로 돌아가기",58,37);
         } else {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
