@@ -278,6 +278,34 @@ public class BottomLifeGame extends ApplicationAdapter {
             pixel(p,16,86,5,9,"896a55");
             pixel(p,47,86,5,9,"896a55");
             pixel(p,18,82,31,5,"ad805c");
+        } else if(mode==2){
+            // Business avenue is its own scene, not a copy of the street screen.
+            pixel(p,0,0,180,120,"171d30");
+            pixel(p,0,0,180,39,"30364d");
+            for(int i=0;i<9;i++){
+                int x=i*22-5,h=23+random.nextInt(18);
+                pixel(p,x,53-h,21,h+32,i%2==0?"3d4259":"333d54");
+                for(int j=0;j<4;j++)for(int k=0;k<3;k++)
+                    pixel(p,x+3+k*6,55-h+j*8,4,5,(i+j)%3==0?"f3b96b":"8da5ae");
+            }
+            pixel(p,0,93,180,27,"292c3c");
+            pixel(p,0,98,180,3,"88745e");
+            for(int i=0;i<5;i++){
+                int x=3+i*36;
+                pixel(p,x,52,33,42,"4c3942");
+                pixel(p,x+2,56,29,34,"222f42");
+                pixel(p,x+2,49,29,10,i%2==0?"a9554d":"4b7e82");
+                pixel(p,x+5,51,23,5,"eac78a");
+                pixel(p,x+4,65,25,20,"3d5760");
+                pixel(p,x+7,68,19,14,"d49e67");
+                for(int j=0;j<3;j++)pixel(p,x+8+j*6,71,4,7,j%2==0?"f0ce9b":"7dc6c6");
+                pixel(p,x+3,87,27,4,"ab7961");
+            }
+            for(int i=0;i<10;i++){
+                int x=i*19;
+                pixel(p,x,106,12,2,"685a5b");
+                pixel(p,x+4,112,8,1,"b48a62");
+            }
         } else {
             // Four depth layers: moonlit skyline, lit windows, shops and wet road.
             pixel(p,0,0,180,120,"111b32");
@@ -494,7 +522,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
-        int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
+        int actor=(rebirths>0||tapLevel>=30?2:0)+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         label("거리",18,613);
         label("사업",105,613);
