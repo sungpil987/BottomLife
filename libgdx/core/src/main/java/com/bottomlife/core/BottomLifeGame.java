@@ -498,9 +498,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(x<0||x>W||y<0||y>H)return;
         if(screen==5){
             if(y>=8&&y<=55){int tab=Math.min(4,Math.max(0,(int)((x-5)/71)));screen=tab==4?5:tab;return;}
-            if(y>=350&&y<365){if(x<180)cycleOutfit();else claimMastery();return;}
-            if(y>=130&&y<235){int col=x<180?0:1;int row=y>=185?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
-            if(y>=290&&y<350){collectReward();return;}
+            if(y>=78&&y<132){if(x<180)cycleOutfit();else claimMastery();return;}
+            if(y>=251&&y<373){int col=x<180?0:1;int row=y>=318?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
+            if(y>=151&&y<204){collectReward();return;}
             if(y>=588&&y<=632){screen=0;notice="거리 노동";return;}
             return;
         }
@@ -978,75 +978,39 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         if(screen==5){
-            rect(8,8,344,624,.04f,.06f,.11f);
-            // Layered skyline, light beams and drifting particles in the content hub.
-            for(int i=0;i<15;i++){
-                float x=i*25-5;
-                float h=35+(i*37)%76;
-                rect(x,502,22,h,.075f,.10f,.17f);
-                for(int j=0;j<4;j++){
-                    float wy=513+j*17;
-                    if(wy<502+h)rect(x+5+(i%2)*4,wy,5,7,.52f,.39f,.22f);
-                }
-            }
-            for(int i=0;i<22;i++){
-                float x=(i*83+17)%330+15;
-                float y=180+(i*47)%320+(float)Math.sin(elapsed*.7f+i)*4;
-                rect(x,y,2+(i%3),2+(i%3),.45f,.54f,.70f);
-            }
-            rect(16,516,328,107,.11f,.16f,.26f);
-            rect(20,521,320,97,.17f,.24f,.35f);
+            rect(8,8,344,624,.045f,.060f,.092f);
+            rect(16,548,328,75,.13f,.18f,.27f);
+            rect(16,619,328,3,.75f,.53f,.29f);
+            rect(16,442,328,91,.09f,.13f,.20f);
+            rect(18,438,324,4,.20f,.27f,.35f);
+            rect(18,440,Math.min(320,Math.max(2,320f*(float)Math.min(1,coins/100000.0))),3,.78f,.55f,.30f);
             for(int i=0;i<4;i++){
                 int col=i%2,row=i/2;
-                float x=18+col*165,y=185-row*55;
-                rect(x,y,158,49,.08f,.12f,.20f);
-                rect(x+3,y+4,152,41,.17f+i*.045f,.23f+i*.035f,.32f+i*.025f);
-                rect(x+8,y+10,32,29,.28f+i*.10f,.48f,.61f-i*.07f);
-                rect(x+13,y+15,22,19,.74f,.67f,.46f);
-                rect(x+15,y+18,18,13,.24f,.33f,.41f);
-                // Individual pixel emblems for business, mining, growth and rebirth.
-                if(i==0){
-                    rect(x+11,y+31,26,5,.92f,.49f,.30f);
-                    rect(x+17,y+20,4,10,.98f,.83f,.58f);
-                    rect(x+29,y+20,4,10,.98f,.83f,.58f);
-                }else if(i==1){
-                    rect(x+12,y+24,22,5,.81f,.88f,.95f);
-                    rect(x+22,y+16,4,20,.61f,.41f,.27f);
-                    rect(x+16,y+31,14,4,.36f,.77f,.95f);
-                }else if(i==2){
-                    rect(x+20,y+15,6,21,.98f,.82f,.39f);
-                    rect(x+13,y+25,20,6,.98f,.82f,.39f);
-                    rect(x+18,y+35,10,3,.99f,.91f,.62f);
-                }else{
-                    rect(x+18,y+16,10,22,.75f,.52f,.94f);
-                    rect(x+12,y+22,22,10,.75f,.52f,.94f);
-                    rect(x+21,y+26,4,4,.99f,.88f,1f);
-                }
+                float x=18+col*165,y=318-row*67;
+                rect(x,y,158,55,.14f,.20f,.29f);
+                rect(x,y+51,158,3,.69f,.49f,.29f);
+                rect(x+9,y+11,34,32,.26f+i*.06f,.36f,.47f);
             }
-            // Progress dashboard; live values are drawn below.
-            rect(18,350,324,10,.10f,.13f,.22f);
-            rect(20,352,Math.min(320,Math.max(2,320f*(float)Math.min(1,coins/100000.0))),6,.77f,.55f,.29f);
-            rect(18,288,324,61,.14f,.20f,.29f);
-            rect(21,294,318,50,.26f,.36f,.43f);
-            rect(18,22,324,60,.14f,.18f,.27f);
+            rect(18,151,324,53,.19f,.28f,.33f);
+            rect(18,78,156,54,.19f,.24f,.34f);
+            rect(185,78,157,54,.19f,.24f,.34f);
             for(int i=0;i<5;i++){
-                float bx=5+i*71;
-                rect(bx,8,68,44,i==4?.40f:.14f,i==4?.29f:.19f,i==4?.19f:.27f);
-                rect(bx,49,68,3,i==4?.96f:.34f,i==4?.72f:.42f,i==4?.36f:.52f);
+                float x=5+i*71;
+                rect(x,8,68,44,i==4?.43f:.14f,i==4?.31f:.19f,i==4?.19f:.27f);
+                rect(x,49,68,3,i==4?.96f:.34f,i==4?.72f:.42f,i==4?.36f:.52f);
             }
-            rect(22,27,316,50,.25f,.30f,.39f);
             shapes.end();
             batch.setProjectionMatrix(camera.combined);batch.begin();
-            label("콘텐츠",129,589);
-            label("거리에서 사업가로 성장하기",26,543);
-            label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),26,267);
-            label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",26,245);
-            label("환생 "+rebirths+"회  영혼 "+fmt(souls),26,223);
-            label("사업",67,214);label("광산",230,214);
-            label("성장",67,159);label("환생",230,159);
-            label("출석 보상 받기",83,322);
-            label("다음 환생까지 "+fmt(Math.max(0,100000-coins)),25,367);
-            label("아래에서 콘텐츠 선택",60,301);
+            label("콘텐츠",28,592);
+            label("거리에서 사업가로",28,564);
+            label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,508);
+            label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",28,484);
+            label("환생 "+rebirths+"회  영혼 "+fmt(souls),28,461);
+            label("다음 환생 "+fmt(Math.max(0,100000-coins)),28,423);
+            label("사업",79,350);label("광산",245,350);
+            label("성장",79,283);label("환생",245,283);
+            label("출석 보상",113,183);
+            label("의상 변경",43,110);label("숙련 보상",210,110);
             label("거리",20,36);label("사업",91,36);label("광산",162,36);
             label("성장",233,36);label("메뉴",304,36);
             batch.end();return;
@@ -1107,7 +1071,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         rect(12,360,336,152,.10f,.13f,.20f);
         if(flash>0)rect(17,364,326,144,.30f,.29f,.18f);
         // Raised pixel-style upgrade panels.
-        float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{590,632}};
+        float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113}};
         for(int i=0;i<buttons.length;i++){
             float y=buttons[i][0], h=buttons[i][1]-y;
             rect(16,y-3,328,h,.035f,.055f,.09f);
@@ -1178,7 +1142,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         // Upgrade iconography belongs to the non-business screens only.
         if(screen!=1){
-        float[] ys={295,237,179,121,63,590};
+        float[] ys={295,237,179,121,63};
         for(int i=0;i<ys.length;i++){
             float y=ys[i];
             rect(24,y+10,30,29,.18f,.27f,.40f);
@@ -1280,7 +1244,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("보석 "+fmt(gems)+"   광물 "+fmt(ore)+"   영혼 "+fmt(souls),27,549);
         if(screen==0){
             label("환생 확인",55,529);
-            label("거리 노동",30,500);
+            
             label("화면을 터치해서 돈을 벌어보자",36,353);
             label("터치 강화 Lv."+tapLevel,65,325);label(fmt(tapCost()),290,325);
             label("자동 수익 Lv."+workerLevel,65,267);label(fmt(workerCost()),290,267);
@@ -1290,20 +1254,19 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("환생 조건 100K",48,613);
         }else if(screen==1){
             label("지점 확장",55,529);label("계약 보상",223,529);
-            label("사업 구매 x"+businessBuyCount,30,499);
             label("사업 Lv."+businessLevels(),30,353);
             for(int i=0;i<5;i++){
                 int y=295-i*58;
-                label(shopNames[i]+"  Lv."+shops[i],82,y+34);
-                label("수익 +"+fmt(shopIncome(i)),82,y+16);
-                label("구매 "+fmt(bulkShopCost(i)),82,y+2);
-                label("관리 "+managers[i]+"/3",246,y+31);
-                label(fmt(managerCost(i)),246,y+14);
+                label(shopNames[i]+" Lv."+shops[i],82,y+34);
+                label("수익 "+fmt(shopIncome(i)),82,y+18);
+                label("구매 "+fmt(bulkShopCost(i)),82,y+3);
+                label("관리 "+managers[i]+"/3",244,y+32);
+                if(managers[i]<3)label(fmt(managerCost(i)),244,y+14);
             }
-            label("지점 "+shopNames[franchiseSelected],30,613);
+            label("구매 x"+businessBuyCount,48,613);
         }else if(screen==2){
             label("심층 보상",55,529);label("장비 변경",223,529);
-            label("광산 "+depth+"층",30,499);
+            
             label("광산 탐험",30,353);
             label("곡괭이 Lv."+drillLevel,65,325);label(fmt(drillCost()),290,325);
             label("더 깊이 "+depth+"층",65,267);label(fmt(mineCost()),290,267);
@@ -1313,7 +1276,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("보상 "+depth+"/"+((mineBossTier+1)*25)+"층",45,613);
         }else{
             label("성장 / 임무",55,529);
-            label(growthMode==0?"성장 능력":"임무 진행",30,499);
+            
             label("성장 임무",30,353);
             if(growthMode==0){
                 label("터치 수익 Lv."+growth[0],65,325);label(fmt(growthCost(0)),290,325);
