@@ -733,36 +733,6 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Art is rendered in the sprite batch below at native pixel resolution.
         rect(12,360,336,152,.10f,.13f,.20f);
         if(flash>0)rect(17,364,326,144,.30f,.29f,.18f);
-        if(effectTimer>0){
-            float spread=(.5f-effectTimer)*110;
-            for(int i=0;i<8;i++){
-                float a=i*6.2831853f/8f;
-                float px=effectX+(float)Math.cos(a)*spread;
-                float py=effectY+(float)Math.sin(a)*spread;
-                if(px>12&&px<348&&py>360&&py<510)
-                    rect(px,py,5,5,effectKind==1?.35f:1f,effectKind==1?.82f:.78f,effectKind==1?1f:.28f);
-            }
-        }
-        // Mining impact shockwave, falling fragments, and floating reward sparks.
-        if(screen==2&&mineImpactTimer>0){
-            float progress=1f-mineImpactTimer/.34f;
-            float radius=9+progress*72;
-            for(int i=0;i<16;i++){
-                float a=i*6.2831853f/16f;
-                float px=180+(float)Math.cos(a)*radius;
-                float py=447+(float)Math.sin(a)*radius*.65f;
-                if(px>22&&px<338&&py>374&&py<503){
-                    rect(px,py,5,5,i%3==0?.90f:.36f,i%3==0?.83f:.74f,i%3==0?.57f:.96f);
-                    rect(px+2,py+6,2,3,.74f,.89f,1f);
-                }
-            }
-            for(int i=0;i<11;i++){
-                float x=130+(i*17)%110+(float)Math.sin(i*2.1f)*progress*24;
-                float y=457+(i*19)%39-progress*(22+i%4*7);
-                if(y>371)rect(x,y,4+i%3,4+i%3,.39f,.62f,.78f);
-            }
-            if(progress<.3f)rect(127,420,106,48,.27f,.46f,.61f);
-        }
         // Raised pixel-style upgrade panels.
         float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
         for(int i=0;i<buttons.length;i++){
@@ -780,7 +750,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(screen==0&&i==3)canBuy=coins>=drillCost();
             if(screen==0&&i==4)canBuy=coins>=mineCost();
             if(screen==0&&i==5)canBuy=coins>=100000;
-            if(screen==1&&i<5)canBuy=coins>=shopCost(i);
+            if(screen==1&&i<5)canBuy=coins>=bulkShopCost(i);
             if(screen==2&&i==0)canBuy=coins>=drillCost();
             if(screen==2&&i==1)canBuy=coins>=mineCost();
             rect(331,y+10,4,29,canBuy?.25f:.68f,canBuy?.83f:.29f,canBuy?.50f:.27f);
@@ -945,6 +915,42 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         label(notice,18,351);
         batch.end();
+        // Overlay particles after the SpriteBatch scene so effects are never hidden behind terrain.
+        if(effectTimer>0||(screen==2&&mineImpactTimer>0)){
+            shapes.setProjectionMatrix(camera.combined);
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+        if(effectTimer>0){
+            float spread=(.5f-effectTimer)*110;
+            for(int i=0;i<8;i++){
+                float a=i*6.2831853f/8f;
+                float px=effectX+(float)Math.cos(a)*spread;
+                float py=effectY+(float)Math.sin(a)*spread;
+                if(px>12&&px<348&&py>360&&py<510)
+                    rect(px,py,5,5,effectKind==1?.35f:1f,effectKind==1?.82f:.78f,effectKind==1?1f:.28f);
+            }
+        }
+        // Mining impact shockwave, falling fragments, and floating reward sparks.
+        if(screen==2&&mineImpactTimer>0){
+            float progress=1f-mineImpactTimer/.34f;
+            float radius=9+progress*72;
+            for(int i=0;i<16;i++){
+                float a=i*6.2831853f/16f;
+                float px=180+(float)Math.cos(a)*radius;
+                float py=447+(float)Math.sin(a)*radius*.65f;
+                if(px>22&&px<338&&py>374&&py<503){
+                    rect(px,py,5,5,i%3==0?.90f:.36f,i%3==0?.83f:.74f,i%3==0?.57f:.96f);
+                    rect(px+2,py+6,2,3,.74f,.89f,1f);
+                }
+            }
+            for(int i=0;i<11;i++){
+                float x=130+(i*17)%110+(float)Math.sin(i*2.1f)*progress*24;
+                float y=457+(i*19)%39-progress*(22+i%4*7);
+                if(y>371)rect(x,y,4+i%3,4+i%3,.39f,.62f,.78f);
+            }
+            if(progress<.3f)rect(127,420,106,48,.27f,.46f,.61f);
+        }
+            shapes.end();
+        }
     }
     @Override public void pause(){persist();}
     @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
