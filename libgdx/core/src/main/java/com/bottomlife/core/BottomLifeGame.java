@@ -5,6 +5,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -19,6 +21,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private SpriteBatch batch;
     private BitmapFont font;
     private Texture koreanAtlas;
+    private Texture streetSprite, mineSprite, shopSprite;
     private String koreanChars;
     private OrthographicCamera camera;
     private Viewport viewport;
@@ -49,6 +52,9 @@ public class BottomLifeGame extends ApplicationAdapter {
             koreanAtlas.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
             koreanChars = Gdx.files.local("korean_chars.txt").readString("UTF-8");
         } catch(Exception ex) { Gdx.app.error("BottomLife","Korean font atlas unavailable",ex); }
+        streetSprite=makePixelScene(0);
+        mineSprite=makePixelScene(1);
+        shopSprite=makePixelScene(2);
         camera = new OrthographicCamera();
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
@@ -171,6 +177,68 @@ public class BottomLifeGame extends ApplicationAdapter {
             notice="환생 성공! 영혼 +"+fmt(gain);persist();
         }
     }
+
+    private void pixel(Pixmap p,int x,int y,int w,int h,String color){
+        p.setColor(Color.valueOf(color));p.fillRectangle(x,y,w,h);
+    }
+    private Texture makePixelScene(int mode){
+        Pixmap p=new Pixmap(180,120,Pixmap.Format.RGBA8888);
+        pixel(p,0,0,180,120,mode==1?"0b1426":mode==2?"192331":"27334a");
+        java.util.Random random=new java.util.Random(3701+mode);
+        if(mode==1){
+            for(int i=0;i<15;i++){
+                int x=random.nextInt(180), y=random.nextInt(110);
+                pixel(p,x,y,4+random.nextInt(12),5+random.nextInt(18),"303449");
+                pixel(p,x+2,y+2,3,9,"46435a");
+            }
+            for(int i=0;i<23;i++){
+                int x=random.nextInt(174),y=20+random.nextInt(90);
+                pixel(p,x,y,7,12,i%3==0?"e0a54c":"317fb9");
+                pixel(p,x+2,y-5,3,8,i%3==0?"ffe08c":"7feaff");
+                pixel(p,x+3,y+4,2,4,"d6f9ff");
+            }
+            pixel(p,0,106,180,14,"292838");
+        } else {
+            pixel(p,0,75,180,45,"34333c");
+            pixel(p,0,101,180,19,"232631");
+            for(int i=0;i<7;i++){
+                int x=i*29-8, h=25+random.nextInt(40);
+                pixel(p,x,75-h,27,h,mode==2?"38394a":"3a4056");
+                for(int wy=78-h;wy<71;wy+=9)for(int wx=x+5;wx<x+24;wx+=9)
+                    if(random.nextInt(4)>0)pixel(p,wx,wy,4,5,"e3a866");
+            }
+            pixel(p,8,51,53,47,mode==2?"6a4540":"594147");
+            pixel(p,12,56,45,30,"182b38");
+            pixel(p,8,47,53,9,"d47d42");
+            for(int i=0;i<5;i++)pixel(p,13+i*9,48,5,6,"ffe4a3");
+            pixel(p,126,54,45,44,"454455");
+            pixel(p,131,59,35,29,"213748");
+            pixel(p,0,102,180,2,"a99a76");
+        }
+        // Character silhouette, clothing, hair and face drawn at true pixel resolution.
+        int x=85,y=56;
+        pixel(p,x-8,y+42,7,14,"202331");pixel(p,x+3,y+42,7,14,"202331");
+        pixel(p,x-12,y+20,26,26,mode==1?"a37b4a":mode==2?"6e9ca6":"7e827e");
+        pixel(p,x-16,y+24,5,19,"c79a77");pixel(p,x+14,y+24,5,19,"c79a77");
+        pixel(p,x-9,y+5,20,18,"e6b18b");
+        pixel(p,x-11,y+2,23,8,"24212c");
+        pixel(p,x-13,y+7,8,12,"24212c");
+        pixel(p,x-5,y+15,3,3,"252b35");pixel(p,x+6,y+15,3,3,"252b35");
+        pixel(p,x-1,y+22,6,2,"8d5551");
+        if(mode==1){
+            pixel(p,x-14,y-1,29,7,"a9a69a");
+            pixel(p,x-10,y-5,22,5,"454954");
+            pixel(p,x+19,y+30,3,22,"b6a2a2");
+            pixel(p,x+14,y+29,13,4,"c3a8a2");
+        }
+        for(int i=0;i<18;i++){
+            int sx=random.nextInt(176),sy=random.nextInt(90);
+            if(sx<65||sx>118)pixel(p,sx,sy,2,2,mode==1?"6fd8ff":"b3a18a");
+        }
+        Texture t=new Texture(p);
+        t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
+        p.dispose();return t;
+    }
     @Override public void resize(int width,int height){viewport.update(width,height,true);}
     private void rect(float x,float y,float w,float h,float r,float g,float b){
         shapes.setColor(r,g,b,1);shapes.rect(x,y,w,h);
@@ -201,51 +269,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        // Layered pixel-art city: skyline, windows, street, animated character.
         rect(8,8,344,624,.08f,.11f,.18f);
-        rect(12,522,336,106,.12f,.18f,.30f);
-        for(int i=0;i<8;i++){
-            int x=14+i*44; int h=22+(i*37%48);
-            rect(x,525,38,h,.16f+(i%3)*.025f,.23f,.34f);
-            for(int wy=530;wy<525+h-4;wy+=13)
-                for(int wx=x+6;wx<x+34;wx+=12)
-                    if((wx+wy+i)%3!=0)rect(wx,wy,5,7,.94f,.73f,.38f);
-        }
-        rect(12,360,336,152,.16f,.24f,.31f);
-        rect(17,366,326,139,.22f,.32f,.39f);
-        rect(21,371,318,128,.30f,.36f,.39f);
-        rect(21,371,318,32,.23f,.26f,.29f);
-        for(int i=0;i<7;i++)rect(30+i*48,385,24,3,.83f,.78f,.56f);
-        // Shop front and its glowing sign.
-        rect(26,422,96,73,.35f,.25f,.27f);
-        rect(32,430,84,50,.15f,.22f,.31f);
-        rect(26,481,96,13,.93f,.56f,.29f);
-        for(int i=0;i<5;i++)rect(33+i*17,482,9,10,.99f,.80f,.48f);
-        rect(250,417,73,78,.24f,.26f,.35f);
-        rect(257,427,59,48,.12f,.16f,.24f);
-        rect(262,438,49,6,.77f,.64f,.39f);
-        // Pixel character with a two-frame idle animation.
-        float bob=((int)(elapsed*3)%2==0)?0:2;
-        float cx=174, cy=414+bob;
-        rect(cx-20,cy-3,14,9,.14f,.16f,.23f);
-        rect(cx+7,cy-3,14,9,.14f,.16f,.23f);
-        rect(cx-20,cy+5,40,35,.23f,.60f,.67f);
-        rect(cx-26,cy+12,8,20,.92f,.70f,.48f);
-        rect(cx+19,cy+12,8,20,.92f,.70f,.48f);
-        rect(cx-16,cy+40,32,30,.95f,.75f,.53f);
-        rect(cx-18,cy+64,36,10,.22f,.17f,.19f);
-        rect(cx-20,cy+56,8,12,.22f,.17f,.19f);
-        rect(cx-9,cy+54,4,4,.11f,.13f,.18f);
-        rect(cx+7,cy+54,4,4,.11f,.13f,.18f);
-        rect(cx-4,cy+45,9,3,.60f,.34f,.31f);
-        // Coin sparkle and tap feedback.
-        float sparkle=(float)Math.sin(elapsed*4);
-        rect(214,465+sparkle*3,14,14,.99f,.78f,.30f);
-        rect(218,468+sparkle*3,6,8,1f,.94f,.57f);
-        if(flash>0){
-            rect(124,477,108,5,1f,.87f,.45f);
-            rect(132,407,96,5,1f,.87f,.45f);
-        }
+        // Art is rendered in the sprite batch below at native pixel resolution.
+        rect(12,360,336,152,.10f,.13f,.20f);
+        if(flash>0)rect(17,364,326,144,.30f,.29f,.18f);
         // Raised pixel-style upgrade panels.
         float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
         for(int i=0;i<buttons.length;i++){
@@ -265,6 +292,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
+        batch.draw(scene,18,369,324,136);
         label("거리",44,613);
         label("사업",156,613);
         label("광산",268,613);
@@ -295,5 +324,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();batch.dispose();shapes.dispose();}
 }
