@@ -107,6 +107,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(seconds>60) notice="오프라인 수익 획득!";
     }
     private double multiplier(){return (1+souls*0.15)*(1+growth[2]*.05);}
+    private double rebirthGain(){return coins<100000?0:Math.max(1,Math.floor(Math.sqrt(coins/100000)));}
+    private void performRebirth(){double gain=rebirthGain();if(gain<1){notice="환생 필요: 100K 돈";return;}souls+=gain;rebirths++;career=Math.max(career,rebirths);coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;screen=0;notice="환생 성공! 영혼 +"+fmt(gain);checkAchievements();persist();}
     private double growthCost(int i){return Math.ceil(new double[]{200,800,2500}[i]*Math.pow(1.65,growth[i]));}
     private void upgradeGrowth(int i){double cost=growthCost(i);if(coins<cost){notice="성장 비용 부족!";return;}coins-=cost;growth[i]++;notice="능력 성장 Lv."+growth[i];persist();}
     private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1));}
@@ -203,6 +205,11 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void input(float x,float y){
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
+        if(screen==4){
+            if(y>=80&&y<=156){performRebirth();return;}
+            if(y>=18&&y<=74){screen=0;notice="거리 노동";return;}
+            return;
+        }
         if(y>=588&&y<=632){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
         if(screen==3){
             if(y>=358&&y<588){growthMode=1-growthMode;notice=growthMode==0?"성장 능력":"임무 보상";return;}
@@ -252,13 +259,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         else if(y>=179 && y<229){mineOnce(false);}
         else if(y>=121 && y<171)buy(drillCost(),2);
         else if(y>=63 && y<113)buy(mineCost(),3);
-        else if(y>=8 && y<55){
-            if(coins<100000){notice="환생 필요: 100K 돈";return;}
-            double gain=Math.max(1,Math.floor(Math.sqrt(coins/100000)));
-            souls+=gain;rebirths++;career=Math.max(career,rebirths);
-            coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;
-            notice="환생 성공! 영혼 +"+fmt(gain);checkAchievements();persist();
-        }
+        else if(y>=8 && y<55){screen=4;notice="환생 보상 확인";}
     }
 
     private void pixel(Pixmap p,int x,int y,int w,int h,String color){
@@ -466,6 +467,44 @@ public class BottomLifeGame extends ApplicationAdapter {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
+        if(screen==4){
+            // Dedicated prestige view: confirmation is separate from the street action.
+            rect(8,8,344,624,.035f,.045f,.09f);
+            rect(15,518,330,104,.11f,.08f,.19f);
+            rect(19,522,322,96,.19f,.12f,.27f);
+            for(int i=0;i<24;i++){
+                float angle=i*6.2831853f/24f+elapsed*.17f;
+                float radius=77+(float)Math.sin(elapsed+i)*3;
+                rect(180+(float)Math.cos(angle)*radius-3,407+(float)Math.sin(angle)*radius-3,6,6,.94f,.67f,.32f);
+            }
+            rect(138,365,84,84,.42f,.26f,.54f);
+            rect(145,372,70,70,.66f,.40f,.78f);
+            rect(157,384,46,46,.24f,.14f,.39f);
+            rect(18,206,324,109,.09f,.12f,.21f);
+            for(int i=0;i<3;i++){
+                float y=278-i*30;
+                rect(26,y,307,25,.17f,.19f,.30f);
+                rect(27,y+21,305,3,.75f,.55f,.31f);
+            }
+            boolean ready=rebirthGain()>0;
+            rect(30,85,300,66,ready?.44f:.24f,ready?.25f:.24f,ready?.60f:.29f);
+            rect(35,91,290,54,ready?.64f:.32f,ready?.41f:.32f,ready?.79f:.36f);
+            rect(30,20,300,48,.15f,.19f,.28f);
+            rect(35,25,290,38,.23f,.29f,.39f);
+            shapes.end();
+            batch.setProjectionMatrix(camera.combined);batch.begin();
+            label("환생",150,597);
+            label("새로운 인생을 시작합니다",40,552);
+            label("영혼 "+fmt(souls)+"  환생 "+rebirths+"회",35,501);
+            label("다음 환생 보상 +"+fmt(rebirthGain()),36,337);
+            label("전체 수익 +"+fmt(souls*15)+"%",37,295);
+            label("터치와 노동자 초기화",37,265);
+            label("사업 성장 능력 유지",37,235);
+            label(ready?"환생하기":"100K 돈 필요",109,120);
+            label("취소  거리로 돌아가기",65,48);
+            batch.end();
+            return;
+        }
         rect(8,8,344,624,.08f,.11f,.18f);
         // Art is rendered in the sprite batch below at native pixel resolution.
         rect(12,360,336,152,.10f,.13f,.20f);
