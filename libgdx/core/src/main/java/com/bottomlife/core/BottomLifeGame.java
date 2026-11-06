@@ -959,18 +959,6 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("거리로 돌아가기",58,37);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
-        if(screen==2){
-            for(int lane=0;lane<3;lane++){
-                int type=mineNodeType(lane);
-                label(mineNodeName(type),35+lane*108,482);
-                label("+"+fmt(drillLevel*depth*biomeMultiplier()*(type==0?.6:type==1?1.0:type==2?1.7:2.5)),35+lane*108,459);
-            }
-        }
-        if(screen==2&&mineRewardTimer>0){
-            float rise=(1.3f-mineRewardTimer)*29;
-            String reward=mineRewardKind==2?"보물 +"+fmt(mineRewardAmount):mineRewardKind==1?"보석 발견!":"광물 +"+fmt(mineRewardAmount);
-            label(reward,102,464+rise);
-        }
         label(notice,18,351);
         batch.end();
         // Overlay particles after the SpriteBatch scene so effects are never hidden behind terrain.
@@ -1003,6 +991,12 @@ public class BottomLifeGame extends ApplicationAdapter {
                         float py=cy+(float)Math.sin(a)*distance-t*15;
                         rect(px,py,5+(fragment%3),6,rr,gg,bb);
                     }
+                }
+                // Pixel-glint and cracked stone accent make each ore type identifiable.
+                float pulse=(float)Math.sin(elapsed*2.8f+lane*1.7f);
+                if(pulse>.35f&&!breaking){
+                    rect(cx+8,cy+9,3,9,.90f,.95f,1f);
+                    rect(cx+5,cy+12,9,3,.90f,.95f,1f);
                 }
                 rect(cx-26,cy-26,52,3,lane==lastMineLane?.92f:.40f,lane==lastMineLane?.75f:.48f,lane==lastMineLane?.36f:.59f);
             }
@@ -1038,6 +1032,21 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(progress<.3f)rect(127,420,106,48,.27f,.46f,.61f);
         }
             shapes.end();
+        }
+        // Draw labels last: previously the ore overlay covered reward text.
+        if(screen==2){
+            batch.begin();
+            for(int lane=0;lane<3;lane++){
+                int type=mineNodeType(lane);
+                label(mineNodeName(type),35+lane*108,482);
+                label("+"+fmt(drillLevel*depth*biomeMultiplier()*(type==0?.6:type==1?1.0:type==2?1.7:2.5)),35+lane*108,459);
+            }
+            if(mineRewardTimer>0){
+                float rise=(1.3f-mineRewardTimer)*29;
+                String reward=mineRewardKind==2?"보물 +"+fmt(mineRewardAmount):mineRewardKind==1?"보석 발견!":"광물 +"+fmt(mineRewardAmount);
+                label(reward,102,464+rise);
+            }
+            batch.end();
         }
     }
     @Override public void pause(){persist();}
