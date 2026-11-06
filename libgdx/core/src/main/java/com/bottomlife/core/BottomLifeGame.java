@@ -1367,5 +1367,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)if(t!=null)t.dispose();for(Texture t:businessPortraits)if(t!=null)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
