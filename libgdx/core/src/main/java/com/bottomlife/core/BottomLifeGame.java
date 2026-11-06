@@ -510,11 +510,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=179&&y<229){buySoulTalent(2);return;}
             if(y>=157&&y<179){claimCareerRank();return;}
             if(y>=80&&y<=156){performRebirth();return;}
-            if(y>=588&&y<=632){screen=0;notice="거리 노동";return;}
+            if((y>=20&&y<=74)||(y>=588&&y<=632)){screen=0;notice="거리 노동";return;}
             return;
         }
         if(y>=8&&y<=55){
-            int tab=Math.min(4,(int)(x/72));
+            int tab=Math.min(4,Math.max(0,(int)((x-5)/71)));
             screen=tab==4?5:tab;
             notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?"성장 임무":"콘텐츠 선택";
             return;
@@ -951,9 +951,9 @@ public class BottomLifeGame extends ApplicationAdapter {
             int index=koreanChars.indexOf(ch);
             if(index>=0){
                 TextureRegion region=new TextureRegion(koreanAtlas,(index%16)*40,(index/16)*40,40,40);
-                batch.draw(region,cursor,y-2,12,12);
+                if(ch!=' ')batch.draw(region,cursor,y-2,12,12);
             }
-            cursor+=ch<128?7:11;
+            cursor+=ch==' '?5:ch<128?7:11;
         }
     }
     @Override public void render(){
@@ -1072,11 +1072,6 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(285,yy+8,46,30,.54f,.39f,.23f);
             }
             rect(22,157,316,21,.35f,.26f,.43f);
-            for(int i=0;i<3;i++){
-                float y=278-i*30;
-                rect(26,y,307,25,.17f,.19f,.30f);
-                rect(27,y+21,305,3,.75f,.55f,.31f);
-            }
             boolean ready=rebirthGain()>0;
             rect(30,85,300,66,ready?.44f:.24f,ready?.25f:.24f,ready?.60f:.29f);
             rect(35,91,290,54,ready?.64f:.32f,ready?.41f:.32f,ready?.79f:.36f);
@@ -1335,7 +1330,8 @@ public class BottomLifeGame extends ApplicationAdapter {
             }
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
-        label(notice.length()>28?notice.substring(0,28):notice,18,351);
+
+
         batch.end();
         // Overlay particles after the SpriteBatch scene so effects are never hidden behind terrain.
         if(effectTimer>0||(screen==2&&mineImpactTimer>0)||screen==2){
@@ -1430,11 +1426,13 @@ public class BottomLifeGame extends ApplicationAdapter {
             for(int route=0;route<3;route++){
                 label(expeditionName(route),24+route*108,548);
             }
-            label("원정 "+expeditionProgress+"/"+expeditionTarget()+" 완료 "+expeditionCompleted,32,575);
+
+
             for(int lane=0;lane<3;lane++){
                 int type=mineNodeType(lane);
                 label(mineNodeName(type),35+lane*108,482);
-                label("+"+fmt(drillLevel*depth*biomeMultiplier()*(type==0?.6:type==1?1.0:type==2?1.7:2.5)),35+lane*108,459);
+
+
             }
             if(mineRewardTimer>0){
                 float rise=(1.3f-mineRewardTimer)*29;
