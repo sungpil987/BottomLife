@@ -1,6 +1,7 @@
 package com.bottomlife.core;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.GL20;
@@ -65,6 +66,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         camera = new OrthographicCamera();
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
+        Gdx.input.setInputProcessor(new InputAdapter(){
+            @Override public boolean touchDown(int sx,int sy,int pointer,int button){
+                if(pointer!=0)return false;
+                touch.set(sx,sy,0);viewport.unproject(touch);input(touch.x,touch.y);
+                return true;
+            }
+        });
         save = Gdx.app.getPreferences("bottomlife_libgdx_v1");
         coins=Double.longBitsToDouble(save.getLong("coins",0L)); gems=Double.longBitsToDouble(save.getLong("gems",0L));
         ore=Double.longBitsToDouble(save.getLong("ore",0L)); souls=Double.longBitsToDouble(save.getLong("souls",0L));
@@ -309,10 +317,6 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
         if(saveTimer>=10){persist();saveTimer=0;}
-        if(Gdx.input.justTouched()){
-            touch.set(Gdx.input.getX(),Gdx.input.getY(),0);
-            viewport.unproject(touch);input(touch.x,touch.y);
-        }
         Gdx.gl.glClearColor(.045f,.065f,.11f,1);Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
@@ -340,6 +344,16 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(16,y+h-5,328,5,i==5?.94f:.28f,i==5?.65f:.39f,i==5?.32f:.49f);
             rect(24,y+10,25,25,i==5?.96f:.83f,i==5?.68f:.61f,i==5?.35f:.33f);
             rect(29,y+15,15,15,.18f,.23f,.31f);
+            boolean canBuy=true;
+            if(screen==0&&i==0)canBuy=coins>=tapCost();
+            if(screen==0&&i==1)canBuy=coins>=workerCost();
+            if(screen==0&&i==3)canBuy=coins>=drillCost();
+            if(screen==0&&i==4)canBuy=coins>=mineCost();
+            if(screen==0&&i==5)canBuy=coins>=100000;
+            if(screen==1&&i<5)canBuy=coins>=shopCost(i);
+            if(screen==2&&i==0)canBuy=coins>=drillCost();
+            if(screen==2&&i==1)canBuy=coins>=mineCost();
+            rect(331,y+10,4,29,canBuy?.25f:.68f,canBuy?.83f:.29f,canBuy?.50f:.27f);
         }
         // Four navigation tabs with matching touch regions.
         for(int i=0;i<4;i++){
