@@ -27,6 +27,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private Texture[] businessPortraits=new Texture[5];
     private Texture[] oreCrystals=new Texture[4];
     private Texture mineGlow;
+    private Texture[] atmosphericLights=new Texture[3];
+    private int previousScreen=-1;
+    private float screenTransitionTimer=0f;
     private Texture streetForeground, mineForeground;
     private Texture pngActor;
     private String koreanChars;
@@ -104,6 +107,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         for(int i=0;i<businessPortraits.length;i++)businessPortraits[i]=makeBusinessPortrait(i);
         for(int i=0;i<oreCrystals.length;i++)oreCrystals[i]=makeOreCrystal(i);
         mineGlow=makeMineGlow();
+        for(int i=0;i<atmosphericLights.length;i++)atmosphericLights[i]=makeAtmosphere(i);
         streetForeground=makeForeground(0);
         mineForeground=makeForeground(1);
         for(int i=0;i<actors.length;i++)actors[i]=makeActor(i);
@@ -603,6 +607,21 @@ public class BottomLifeGame extends ApplicationAdapter {
         for(int i=0;i<4;i++)pixel(p,5+i*11,42-(i%2)*3,3,2,shine[type]);
         Texture t=new Texture(p);t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);p.dispose();return t;
     }
+    // Transparent foreground light layers for a lively scene, not a static UI mockup.
+    private Texture makeAtmosphere(int mode){
+        Pixmap p=new Pixmap(128,64,Pixmap.Format.RGBA8888);
+        p.setColor(0,0,0,0);p.fill();
+        java.util.Random rng=new java.util.Random(8107+mode*123);
+        for(int i=0;i<45;i++){
+            int x=rng.nextInt(126),y=rng.nextInt(62);
+            float a=.20f+rng.nextFloat()*.42f;
+            if(mode==1)p.setColor(.32f,.82f,1f,a);
+            else if(mode==2)p.setColor(1f,.72f,.34f,a);
+            else p.setColor(1f,.78f,.61f,a);
+            p.fillRectangle(x,y,1+rng.nextInt(2),1+rng.nextInt(2));
+        }
+        Texture t=new Texture(p);t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);p.dispose();return t;
+    }
     private Texture makeMineGlow(){
         Pixmap p=new Pixmap(64,64,Pixmap.Format.RGBA8888);
         p.setColor(0,0,0,0);p.fill();
@@ -939,7 +958,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;mineNodeBreakTimer=Math.max(0,mineNodeBreakTimer-delta);mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;
+        if(screen!=previousScreen){previousScreen=screen;screenTransitionTimer=.24f;}
+        screenTransitionTimer=Math.max(0f,screenTransitionTimer-delta);
+        mineNodeBreakTimer=Math.max(0,mineNodeBreakTimer-delta);mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if((workerLevel>=5&&drillLevel>=3)||mineGear[2]>0){
             autoMineTimer+=delta;
@@ -1212,6 +1234,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         float shake=screen==2&&mineShakeTimer>0?(float)Math.sin(elapsed*95)*mineShakeTimer*9:0;
         batch.draw(scene,18+shake,369,324,136);
+        int atmosphereMode=screen==2?1:screen==1?2:0;
+        float drift=(elapsed*6f)%150f;
+        float sparkleAlpha=.40f+.15f*(float)Math.sin(elapsed*2.2f);
+        batch.setColor(1f,1f,1f,sparkleAlpha);
+        batch.draw(atmosphericLights[atmosphereMode],18+shake+drift-145,370,324,132);
+        batch.draw(atmosphericLights[atmosphereMode],18+shake+drift+4,370,324,132);
+        batch.setColor(1f,1f,1f,1f);
         if(screen==2){
             for(int lane=0;lane<3;lane++){
                 int type=mineNodeType(lane);
@@ -1232,8 +1261,22 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         int tier=outfitSelected;
         int actor=tier*2+((int)(elapsed*3)%2);
-        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        float idleBob=(float)Math.sin(elapsed*3.3f)*2f;
+        float breathing=1f+.012f*(float)Math.sin(elapsed*2.1f);
+        float characterW=76f*breathing;
+        batch.draw(actors[actor],187-characterW/2,389+idleBob+(flash>0?3:0),characterW,113);
+        if(screen==0&&tapFloatTimer>0){
+            batch.setColor(1f,.84f,.45f,Math.min(1f,tapFloatTimer*2f));
+            batch.draw(mineGlow,160,440+((.5f-tapFloatTimer)*24f),55,55);
+            batch.setColor(1f,1f,1f,1f);
+        }
         if(screen==0)batch.draw(streetForeground,18,369,324,136);
+        if(screenTransitionTimer>0){
+            float alpha=Math.min(.38f,screenTransitionTimer*1.4f);
+            batch.setColor(.08f,.10f,.16f,alpha);
+            batch.draw(atmosphericLights[screen==2?1:screen==1?2:0],18,369,324,136);
+            batch.setColor(1f,1f,1f,1f);
+        }
         if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
         if(screen==1){
             for(int i=0;i<5;i++){
@@ -1419,5 +1462,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)if(t!=null)t.dispose();for(Texture t:businessPortraits)if(t!=null)t.dispose();for(Texture t:oreCrystals)if(t!=null)t.dispose();if(mineGlow!=null)mineGlow.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)if(t!=null)t.dispose();for(Texture t:businessPortraits)if(t!=null)t.dispose();for(Texture t:oreCrystals)if(t!=null)t.dispose();for(Texture t:atmosphericLights)if(t!=null)t.dispose();if(mineGlow!=null)mineGlow.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
