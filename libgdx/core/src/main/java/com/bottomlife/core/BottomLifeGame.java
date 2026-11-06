@@ -38,6 +38,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double lastTapEarned;
     private int totalTaps, achievementFlags;
     private float autoMineTimer;
+    private float effectX=180,effectY=445,effectTimer;
+    private int effectKind;
     private int screen=0, career=0, claimed=0;
     private int questTier=0, questTapBase=0, questMineBase=0;
     private int mineActions=0;
@@ -127,6 +129,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         notice="임무 완료! 돈 +"+fmt(reward);persist();
     }
     private void mineOnce(boolean large){
+        effectX=180;effectY=452;effectTimer=.5f;effectKind=1;
         double amount=drillLevel*depth*(large?2:1);
         ore+=amount;mineActions++;flash=.16f;
         if(Math.random()<Math.min(.4,.04+depth*.004))gems++;
@@ -170,6 +173,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         checkAchievements();persist();
     }
     private void input(float x,float y){
+        effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
         if(y>=588){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
         if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=8&&y<55){screen=0;}return;}
@@ -192,6 +196,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(y>=358 && y<588){
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
+            effectTimer=.5f;effectKind=0;
             coins+=earned;flash=0.16f;tapFloatTimer=.6f;lastTapEarned=earned;totalTaps++;notice="+"+fmt(earned)+" 돈  콤보 "+combo;
             checkAchievements();
             if(Math.random()<0.005){gems++;notice="행운! 보석 +1";}
@@ -300,7 +305,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
         if(saveTimer>=10){persist();saveTimer=0;}
@@ -316,6 +321,16 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Art is rendered in the sprite batch below at native pixel resolution.
         rect(12,360,336,152,.10f,.13f,.20f);
         if(flash>0)rect(17,364,326,144,.30f,.29f,.18f);
+        if(effectTimer>0){
+            float spread=(.5f-effectTimer)*110;
+            for(int i=0;i<8;i++){
+                float a=i*6.2831853f/8f;
+                float px=effectX+(float)Math.cos(a)*spread;
+                float py=effectY+(float)Math.sin(a)*spread;
+                if(px>12&&px<348&&py>360&&py<510)
+                    rect(px,py,5,5,effectKind==1?.35f:1f,effectKind==1?.82f:.78f,effectKind==1?1f:.28f);
+            }
+        }
         // Raised pixel-style upgrade panels.
         float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
         for(int i=0;i<buttons.length;i++){
@@ -338,7 +353,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
         int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
-        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2,76,113);
+        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
