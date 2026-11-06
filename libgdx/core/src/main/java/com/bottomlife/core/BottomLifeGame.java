@@ -244,18 +244,40 @@ public class BottomLifeGame extends ApplicationAdapter {
         pixel(p,0,0,180,120,mode==1?"0b1426":mode==2?"192331":"27334a");
         java.util.Random random=new java.util.Random(3701+mode);
         if(mode==1){
+            pixel(p,0,0,180,120,"080e1e");
+            pixel(p,0,0,180,18,"111b31");
+            for(int layer=0;layer<4;layer++){
+                int y=layer*23;
+                for(int i=0;i<18;i++){
+                    int x=i*13-8+(layer%2)*7;
+                    pixel(p,x,y,12,15,layer%2==0?"22253e":"30324b");
+                    pixel(p,x+2,y+2,7,2,"42435d");
+                }
+            }
             for(int i=0;i<15;i++){
-                int x=random.nextInt(180), y=random.nextInt(110);
-                pixel(p,x,y,4+random.nextInt(12),5+random.nextInt(18),"303449");
-                pixel(p,x+2,y+2,3,9,"46435a");
+                int x=i*13-4;
+                pixel(p,x,0,8,10+random.nextInt(19),"34324b");
+                pixel(p,x+2,12,4,6,"55506a");
+                pixel(p,x+3,18,2,5,"77718a");
             }
-            for(int i=0;i<23;i++){
-                int x=random.nextInt(174),y=20+random.nextInt(90);
-                pixel(p,x,y,7,12,i%3==0?"e0a54c":"317fb9");
-                pixel(p,x+2,y-5,3,8,i%3==0?"ffe08c":"7feaff");
-                pixel(p,x+3,y+4,2,4,"d6f9ff");
+            pixel(p,0,100,180,20,"1c2135");
+            pixel(p,0,109,180,11,"11182a");
+            for(int i=0;i<18;i++){
+                int x=random.nextInt(174),y=30+random.nextInt(68);
+                boolean blue=i%3!=0;
+                pixel(p,x,y,9,16,blue?"255c91":"755c9d");
+                pixel(p,x+2,y-8,5,11,blue?"3e9bd1":"a37bd4");
+                pixel(p,x+3,y-12,3,6,blue?"a0edff":"e1b4ff");
+                pixel(p,x+3,y+3,2,8,blue?"76d8f7":"d4a5ee");
             }
-            pixel(p,0,106,180,14,"292838");
+            for(int i=0;i<22;i++){
+                int x=random.nextInt(180),y=15+random.nextInt(90);
+                pixel(p,x,y,2,2,i%2==0?"f0c981":"75d9fa");
+            }
+            pixel(p,12,91,43,4,"6a5147");
+            pixel(p,16,86,5,9,"896a55");
+            pixel(p,47,86,5,9,"896a55");
+            pixel(p,18,82,31,5,"ad805c");
         } else {
             // Four depth layers: moonlit skyline, lit windows, shops and wet road.
             pixel(p,0,0,180,120,"111b32");
@@ -471,9 +493,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
-        batch.draw(screen==0&&streetArt!=null?streetArt:scene,18,369,324,136);
+        batch.draw(scene,18,369,324,136);
         int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
-        if(screen!=0||streetArt==null)batch.draw(pngActor!=null&&rebirths==0?pngActor:actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
