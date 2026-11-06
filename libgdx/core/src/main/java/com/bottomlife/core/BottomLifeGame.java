@@ -57,6 +57,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private final int[] mineGear=new int[3];
     private int mineGearSelected=0;
     private int mineBossTier=0;
+    private int expeditionRoute=0,expeditionTier=0,expeditionProgress=0;
+    private int expeditionCompleted=0;
+    private int mineGearBulk=1;
     private int lastMineLane=-1;
     private float mineNodeBreakTimer;
     private int mineBiomeCache=-1;
@@ -124,6 +127,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             mineGear[i]=Math.max(0,save.getInteger("mineGear"+i,0));
         }
         mineBossTier=Math.max(0,save.getInteger("mineBossTier",0));
+        expeditionRoute=Math.max(0,Math.min(2,save.getInteger("expeditionRoute",0)));
+        expeditionTier=Math.max(0,save.getInteger("expeditionTier",0));
+        expeditionProgress=Math.max(0,save.getInteger("expeditionProgress",0));
+        expeditionCompleted=Math.max(0,save.getInteger("expeditionCompleted",0));
+        mineGearBulk=save.getInteger("mineGearBulk",1)==5?5:1;
         businessBuyCount=save.getInteger("businessBuyCount",1)==10?10:1;
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
@@ -254,12 +262,40 @@ public class BottomLifeGame extends ApplicationAdapter {
         persist();
     }
     private double mineGearCost(int i){return Math.ceil((i+1)*500.0*Math.pow(2.15,mineGear[i]));}
+    private double mineGearBulkCost(int i){
+        double total=0;
+        for(int n=0;n<mineGearBulk;n++){
+            double cost=Math.ceil((i+1)*500.0*Math.pow(2.15,mineGear[i]+n));
+            if(!Double.isFinite(cost))return Double.POSITIVE_INFINITY;
+            total+=cost;
+        }
+        return total;
+    }
+    private int expeditionTarget(){return 12+expeditionTier*4;}
+    private String expeditionName(int route){return route==0?"광맥 조사":route==1?"유물 탐사":"심층 원정";}
+    private void selectExpedition(int route){
+        if(expeditionProgress>0&&route!=expeditionRoute){notice="진행 중인 원정을 먼저 완료!";return;}
+        expeditionRoute=route;notice=expeditionName(route)+" 선택";persist();
+    }
+    private void expeditionDig(int type){
+        if(expeditionProgress>=expeditionTarget())return;
+        boolean matched=expeditionRoute==0?(type==0||type==2):expeditionRoute==1?(type==1||type==3):depth>=5;
+        if(!matched)return;
+        expeditionProgress++;
+        if(expeditionProgress>=expeditionTarget()){
+            int rewardGems=(expeditionRoute+1)*(2+expeditionTier);
+            double rewardCoins=(expeditionRoute+1)*depth*drillLevel*(500.0+expeditionTier*200.0);
+            gems+=rewardGems;coins+=rewardCoins;expeditionCompleted++;
+            expeditionTier++;expeditionProgress=0;
+            notice="원정 성공! 보석 +"+rewardGems;
+        }
+    }
     private String mineGearName(int i){return i==0?"강화 곡괭이":i==1?"광물 탐지기":"자동 굴착기";}
     private void upgradeMineGear(int i){
-        double cost=mineGearCost(i);
+        double cost=mineGearBulkCost(i);
         if(!Double.isFinite(cost)||coins<cost){notice="장비 강화 비용 부족!";return;}
-        coins-=cost;mineGear[i]++;
-        notice=mineGearName(i)+" Lv."+mineGear[i];
+        coins-=cost;mineGear[i]+=mineGearBulk;
+        notice=mineGearName(i)+" +"+mineGearBulk+" Lv."+mineGear[i];
         checkAchievements();persist();
     }
     private double mineGearYield(){return 1+mineGear[0]*.15;}
@@ -284,6 +320,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void mineNode(int lane){
         int type=mineNodeType(lane);
         mineNodeHits[lane]++;
+        expeditionDig(type);
         lastMineLane=lane;mineNodeBreakTimer=.42f;
         effectX=72+lane*108;effectY=415;
         mineOnce(true);
@@ -329,6 +366,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             save.putInteger("mineGear"+i,mineGear[i]);
         }
         save.putInteger("mineBossTier",mineBossTier);
+        save.putInteger("expeditionRoute",expeditionRoute);
+        save.putInteger("expeditionTier",expeditionTier);
+        save.putInteger("expeditionProgress",expeditionProgress);
+        save.putInteger("expeditionCompleted",expeditionCompleted);
+        save.putInteger("mineGearBulk",mineGearBulk);
         save.putInteger("businessBuyCount",businessBuyCount);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
@@ -392,14 +434,14 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         if(screen==2){
             if(y>=369&&y<=505&&x>=18&&x<=342){mineNode(Math.min(2,Math.max(0,(int)((x-18)/108))));return;}
-            if(y>=505&&y<588){int gear=Math.min(2,Math.max(0,(int)((x-18)/108)));mineGearSelected=gear;notice=mineGearName(gear)+" Lv."+mineGear[gear];return;}
+            if(y>=505&&y<588){int route=Math.min(2,Math.max(0,(int)((x-18)/108)));selectExpedition(route);return;}
             if(y>=358&&y<505){mineOnce(true);return;}
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
             if(y>=179&&y<229){double sold=ore*(2+depth)*mineSellMultiplier();coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
             if(y>=121&&y<171){claimMineMilestone();return;}
-            if(y>=63&&y<113){upgradeMineGear(mineGearSelected);return;}
-            if(y>=8&&y<55){claimMineBoss();return;}
+            if(y>=63&&y<113){if(x>=275){mineGearBulk=mineGearBulk==1?5:1;notice="장비 일괄 강화 x"+mineGearBulk;persist();}else upgradeMineGear(mineGearSelected);return;}
+            if(y>=8&&y<55){if(x>=265){mineGearSelected=(mineGearSelected+1)%3;notice=mineGearName(mineGearSelected)+" 선택";}else claimMineBoss();return;}
             return;
         }
         if(screen==0&&x>=260&&y>=472&&y<515){screen=5;notice="콘텐츠 선택";return;}
@@ -996,8 +1038,10 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
             label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)*mineSellMultiplier()),58,209);
             label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),58,151);
-            label(mineGearName(mineGearSelected)+" Lv."+mineGear[mineGearSelected]+" "+fmt(mineGearCost(mineGearSelected)),58,93);
+            label(mineGearName(mineGearSelected)+" x"+mineGearBulk+" "+fmt(mineGearBulkCost(mineGearSelected)),58,93);
+            label("x"+mineGearBulk,288,93);
             label("심층 보상 "+depth+"/"+((mineBossTier+1)*25)+"층",58,37);
+            label("장비 변경",269,37);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
         label(notice,18,351);
@@ -1077,9 +1121,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         // Draw labels last: previously the ore overlay covered reward text.
         if(screen==2){
             batch.begin();
-            for(int gear=0;gear<3;gear++){
-                label(mineGearName(gear)+" "+mineGear[gear],24+gear*108,522);
+            for(int route=0;route<3;route++){
+                label(expeditionName(route),24+route*108,548);
             }
+            label("원정 "+expeditionProgress+"/"+expeditionTarget()+" 완료 "+expeditionCompleted,32,575);
             for(int lane=0;lane<3;lane++){
                 int type=mineNodeType(lane);
                 label(mineNodeName(type),35+lane*108,482);
