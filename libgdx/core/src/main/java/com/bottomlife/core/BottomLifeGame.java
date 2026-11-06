@@ -42,6 +42,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int totalTaps, achievementFlags;
     private float autoMineTimer;
     private float effectX=180,effectY=445,effectTimer;
+    private float mineImpactTimer, mineRewardTimer;
+    private int mineRewardKind;
+    private double mineRewardAmount;
     private int effectKind;
     private int screen=0, career=0, claimed=0;
     private int questTier=0, questTapBase=0, questMineBase=0;
@@ -162,12 +165,13 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     private void mineOnce(boolean large){
         effectX=180;effectY=452;effectTimer=.5f;effectKind=1;
+        mineImpactTimer=.34f;mineRewardTimer=1.3f;mineRewardKind=0;
         double amount=drillLevel*depth*(large?2:1);
-        ore+=amount;mineActions++;flash=.16f;
-        if(Math.random()<Math.min(.4,.04+depth*.004))gems++;
+        ore+=amount;mineActions++;flash=.16f;mineRewardAmount=amount;
+        if(Math.random()<Math.min(.4,.04+depth*.004)){gems++;mineRewardKind=1;}
         if(Math.random()<.06){
             double bonus=100*depth*drillLevel;
-            coins+=bonus;treasures++;
+            coins+=bonus;treasures++;mineRewardKind=2;mineRewardAmount=bonus;
             notice="보물상자 발견! +"+fmt(bonus);
         }else notice="광물 +"+fmt(amount)+" 획득";
         checkAchievements();persist();
@@ -540,7 +544,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
         if(saveTimer>=10){persist();saveTimer=0;}
@@ -666,6 +670,26 @@ public class BottomLifeGame extends ApplicationAdapter {
                 if(px>12&&px<348&&py>360&&py<510)
                     rect(px,py,5,5,effectKind==1?.35f:1f,effectKind==1?.82f:.78f,effectKind==1?1f:.28f);
             }
+        }
+        // Mining impact shockwave, falling fragments, and floating reward sparks.
+        if(screen==2&&mineImpactTimer>0){
+            float progress=1f-mineImpactTimer/.34f;
+            float radius=9+progress*72;
+            for(int i=0;i<16;i++){
+                float a=i*6.2831853f/16f;
+                float px=180+(float)Math.cos(a)*radius;
+                float py=447+(float)Math.sin(a)*radius*.65f;
+                if(px>22&&px<338&&py>374&&py<503){
+                    rect(px,py,5,5,i%3==0?.90f:.36f,i%3==0?.83f:.74f,i%3==0?.57f:.96f);
+                    rect(px+2,py+6,2,3,.74f,.89f,1f);
+                }
+            }
+            for(int i=0;i<11;i++){
+                float x=130+(i*17)%110+(float)Math.sin(i*2.1f)*progress*24;
+                float y=457+(i*19)%39-progress*(22+i%4*7);
+                if(y>371)rect(x,y,4+i%3,4+i%3,.39f,.62f,.78f);
+            }
+            if(progress<.3f)rect(127,420,106,48,.27f,.46f,.61f);
         }
         // Raised pixel-style upgrade panels.
         float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
@@ -839,6 +863,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("거리로 돌아가기",58,37);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
+        if(screen==2&&mineRewardTimer>0){
+            float rise=(1.3f-mineRewardTimer)*29;
+            String reward=mineRewardKind==2?"보물 +"+fmt(mineRewardAmount):mineRewardKind==1?"보석 발견!":"광물 +"+fmt(mineRewardAmount);
+            label(reward,102,464+rise);
+        }
         label(notice,18,351);
         batch.end();
     }
