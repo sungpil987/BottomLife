@@ -23,7 +23,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private BitmapFont font;
     private Texture koreanAtlas;
     private Texture streetSprite, mineSprite, shopSprite, streetArt;
-    private Texture[] actors=new Texture[4];
+    private Texture[] actors=new Texture[8];
     private Texture pngActor;
     private String koreanChars;
     private OrthographicCamera camera;
@@ -69,7 +69,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         catch(Exception ex){Gdx.app.error("BottomLife","Street asset unavailable",ex);}
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
-        for(int i=0;i<4;i++)actors[i]=makeActor(i);
+        for(int i=0;i<actors.length;i++)actors[i]=makeActor(i);
         try {
             byte[] bytes=java.util.Base64.getDecoder().decode(CHARACTER_PNG);
             Pixmap pix=new Pixmap(bytes,0,bytes.length);
@@ -423,25 +423,53 @@ public class BottomLifeGame extends ApplicationAdapter {
         p.dispose();return t;
     }
     private Texture makeActor(int variant){
-        Pixmap p=new Pixmap(40,64,Pixmap.Format.RGBA8888);
+        Pixmap p=new Pixmap(48,72,Pixmap.Format.RGBA8888);
         p.setColor(0,0,0,0);p.fill();
-        boolean rich=variant>=2, walk=variant%2==1;
-        String coat=rich?"27394e":"657d7d";
-        pixel(p,9,53,9,7,"1b2230");pixel(p,23,walk?51:53,9,7,"1b2230");
-        pixel(p,10,42,8,12,"303447");pixel(p,22,42,8,12,"303447");
-        pixel(p,9,25,23,21,"1b2634");pixel(p,11,27,19,18,coat);
-        pixel(p,16,27,8,10,rich?"e8d6b3":"c9a88c");
-        pixel(p,5,walk?31:29,6,16,coat);pixel(p,32,29,5,16,coat);
-        pixel(p,7,walk?44:42,4,5,"dba47e");pixel(p,33,42,4,5,"dba47e");
-        pixel(p,12,10,18,17,"b78362");pixel(p,13,11,16,15,"e3b18b");
-        pixel(p,10,6,22,8,"25202b");pixel(p,10,10,5,9,"25202b");
-        pixel(p,14,7,11,3,"38303a");pixel(p,16,18,3,3,"202b35");
-        pixel(p,26,18,3,3,"202b35");pixel(p,21,23,4,2,"945d59");
-        if(rich){
-            pixel(p,17,27,6,17,"f0e6cf");pixel(p,19,30,3,13,"c6a44e");
-            pixel(p,8,24,25,4,"d6ad54");
+        int tier=variant/2;
+        boolean stride=(variant%2)==1;
+        String coat=tier==0?"546a77":tier==1?"385e73":tier==2?"423e66":"6d4d49";
+        String trim=tier==0?"8f9ca2":tier==1?"79c7cb":tier==2?"c2a16c":"f2d58e";
+        String pants=tier<2?"303847":"26283e";
+        // Offset feet and coat hem for a real two-frame walking silhouette.
+        pixel(p,10,63,12,6,"171f2c");pixel(p,27,stride?61:63,12,6,"171f2c");
+        pixel(p,12,48,9,16,pants);pixel(p,27,stride?46:48,9,16,pants);
+        pixel(p,11,32,27,20,"172536");
+        pixel(p,13,33,23,19,coat);
+        pixel(p,12,45,25,4,trim);
+        pixel(p,10,35,4,15,"263747");pixel(p,34,35,4,15,"263747");
+        pixel(p,6,stride?39:36,7,18,coat);pixel(p,37,stride?36:39,6,18,coat);
+        pixel(p,7,stride?53:50,6,6,"dca987");pixel(p,37,stride?50:53,6,6,"dca987");
+        pixel(p,16,34,16,4,"1c2937");
+        pixel(p,18,36,12,12,tier==0?"c0a38e":"efe1c5");
+        if(tier>0){
+            pixel(p,21,38,6,12,tier==3?"d5a94e":"b2d7df");
+            pixel(p,22,42,4,7,tier==3?"f8e2a0":"5c8291");
         }else{
-            pixel(p,10,37,5,3,"9d8b76");pixel(p,29,34,4,5,"9b7965");
+            pixel(p,14,39,5,5,"8b7470");pixel(p,30,39,4,5,"8b7470");
+        }
+        // Face: ears, neck, skin shadow, eyes and mouth.
+        pixel(p,19,27,10,9,"ba8266");
+        pixel(p,15,13,19,19,"9f6c58");
+        pixel(p,16,13,17,17,"e4ad88");
+        pixel(p,14,20,3,7,"b98066");pixel(p,33,20,3,7,"b98066");
+        pixel(p,18,25,12,3,"efbc95");
+        pixel(p,19,21,3,3,"25313b");pixel(p,28,21,3,3,"25313b");
+        pixel(p,23,27,4,2,"a76765");
+        pixel(p,16,11,17,6,"25232d");
+        pixel(p,14,15,5,11,"25232d");
+        pixel(p,30,13,5,9,"25232d");
+        pixel(p,19,10,10,3,"49404a");
+        if(tier>=2){
+            // High-tier shoulder mantle and gold fasteners.
+            pixel(p,8,31,8,6,tier==3?"b78a4e":"645e89");
+            pixel(p,33,31,8,6,tier==3?"b78a4e":"645e89");
+            pixel(p,12,36,5,5,"e2c07e");pixel(p,33,36,4,5,"e2c07e");
+        }
+        if(tier==3){
+            pixel(p,13,9,22,4,"d2a95e");
+            pixel(p,17,6,4,5,"f7df99");
+            pixel(p,27,6,4,5,"f7df99");
+            pixel(p,23,5,3,7,"f7df99");
         }
         Texture t=new Texture(p);
         t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);
@@ -700,7 +728,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         batch.draw(scene,18,369,324,136);
-        int actor=(rebirths>0||tapLevel>=30?2:0)+((int)(elapsed*3)%2);
+        int tier=Math.min(3,Math.max(Math.max(0,tapLevel/30),rebirths));
+        int actor=tier*2+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         if(screen==0)label("콘텐츠",274,495);
         label("거리",18,613);
