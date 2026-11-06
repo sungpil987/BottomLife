@@ -128,9 +128,22 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
     private int shopMilestone(int level){return level>=100?4:level>=50?3:level>=25?2:level>=10?1:0;}
     private int nextShopMilestone(int level){return level<10?10:level<25?25:level<50?50:level<100?100:0;}
+    private int operatingShops(){int n=0;for(int level:shops)if(level>0)n++;return n;}
+    private double businessSynergy(){int active=operatingShops();return active>=5?1.5:active>=3?1.2:1.0;}
+    private double shopSpecial(int i){
+        if(shops[i]<1)return 1;
+        if(i==0)return 1+Math.min(2.0,totalTaps/500.0);
+        if(i==1)return 1+Math.min(1.5,depth/50.0);
+        if(i==2)return 1+Math.min(1.5,treasures/25.0);
+        if(i==3)return 1+Math.min(2.0,rebirths*.15);
+        return 1+Math.min(2.0,missions*.08);
+    }
+    private String shopSpecialName(int i){
+        return new String[]{"손님 유입","광산 납품","보물 판매","환생 투자","임무 제휴"}[i];
+    }
     private double shopIncome(int i){
         double managerBonus=managers[i]==0?1:managers[i]==1?1.5:managers[i]==2?2.25:3.5;
-        return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*managerBonus*multiplier()*(1+career*.05);
+        return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*Math.pow(2,shopMilestone(shops[i]))*managerBonus*shopSpecial(i)*businessSynergy()*multiplier()*(1+career*.05);
     }
     private double managerCost(int i){return Math.ceil(shopBase[i]*15*Math.pow(6,managers[i]));}
     private void hireManager(int i){
@@ -279,7 +292,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==1){
-            if(y>=358&&y<588){notice="사업 "+businessLevels()+"레벨 초당 +"+fmt(income());return;}
+            if(y>=358&&y<588){notice="사업 "+operatingShops()+"개 운영  제휴 x"+String.format(java.util.Locale.US,"%.1f",businessSynergy());return;}
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=235)hireManager(i);else purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
@@ -881,6 +894,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 int next=nextShopMilestone(shops[i]);
                 label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
+                label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-23);
                 label("구매 "+fmt(shopCost(i)),60,y-27);
                 label(managers[i]>=3?"관리 MAX":"관리 "+fmt(managerCost(i)),237,y-4);
             }
