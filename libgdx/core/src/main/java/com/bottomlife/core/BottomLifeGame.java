@@ -22,7 +22,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private final Vector3 touch = new Vector3();
     private double coins, gems, ore, souls;
     private int tapLevel, workerLevel, drillLevel, depth, rebirths;
-    private float timer, saveTimer, flash;
+    private float timer, saveTimer, flash, elapsed;
     private String notice = "Tap the street to earn!";
     private static final float W=360, H=640;
 
@@ -106,7 +106,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;flash=Math.max(0,flash-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(saveTimer>=10){persist();saveTimer=0;}
         if(Gdx.input.justTouched()){
@@ -117,30 +117,75 @@ public class BottomLifeGame extends ApplicationAdapter {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        rect(8,8,344,624,.10f,.14f,.22f);
-        rect(16,524,328,99,.15f,.21f,.31f);
-        rect(16,360,328,150,.24f,.30f,.40f);
-        rect(27,371,306,128,.10f,.15f,.23f);
-        rect(144,386,72,88,.78f,.60f,.39f);
-        rect(157,448,46,43,.94f,.77f,.53f);
-        rect(137,393,86,25,.20f,.54f,.64f);
-        if(flash>0)rect(28,374,304,120,.25f,.43f,.32f);
+        // Layered pixel-art city: skyline, windows, street, animated character.
+        rect(8,8,344,624,.08f,.11f,.18f);
+        rect(12,522,336,106,.12f,.18f,.30f);
+        for(int i=0;i<8;i++){
+            int x=14+i*44; int h=22+(i*37%48);
+            rect(x,525,38,h,.16f+(i%3)*.025f,.23f,.34f);
+            for(int wy=530;wy<525+h-4;wy+=13)
+                for(int wx=x+6;wx<x+34;wx+=12)
+                    if((wx+wy+i)%3!=0)rect(wx,wy,5,7,.94f,.73f,.38f);
+        }
+        rect(12,360,336,152,.16f,.24f,.31f);
+        rect(17,366,326,139,.22f,.32f,.39f);
+        rect(21,371,318,128,.30f,.36f,.39f);
+        rect(21,371,318,32,.23f,.26f,.29f);
+        for(int i=0;i<7;i++)rect(30+i*48,385,24,3,.83f,.78f,.56f);
+        // Shop front and its glowing sign.
+        rect(26,422,96,73,.35f,.25f,.27f);
+        rect(32,430,84,50,.15f,.22f,.31f);
+        rect(26,481,96,13,.93f,.56f,.29f);
+        for(int i=0;i<5;i++)rect(33+i*17,482,9,10,.99f,.80f,.48f);
+        rect(250,417,73,78,.24f,.26f,.35f);
+        rect(257,427,59,48,.12f,.16f,.24f);
+        rect(262,438,49,6,.77f,.64f,.39f);
+        // Pixel character with a two-frame idle animation.
+        float bob=((int)(elapsed*3)%2==0)?0:2;
+        float cx=174, cy=414+bob;
+        rect(cx-20,cy-3,14,9,.14f,.16f,.23f);
+        rect(cx+7,cy-3,14,9,.14f,.16f,.23f);
+        rect(cx-20,cy+5,40,35,.23f,.60f,.67f);
+        rect(cx-26,cy+12,8,20,.92f,.70f,.48f);
+        rect(cx+19,cy+12,8,20,.92f,.70f,.48f);
+        rect(cx-16,cy+40,32,30,.95f,.75f,.53f);
+        rect(cx-18,cy+64,36,10,.22f,.17f,.19f);
+        rect(cx-20,cy+56,8,12,.22f,.17f,.19f);
+        rect(cx-9,cy+54,4,4,.11f,.13f,.18f);
+        rect(cx+7,cy+54,4,4,.11f,.13f,.18f);
+        rect(cx-4,cy+45,9,3,.60f,.34f,.31f);
+        // Coin sparkle and tap feedback.
+        float sparkle=(float)Math.sin(elapsed*4);
+        rect(214,465+sparkle*3,14,14,.99f,.78f,.30f);
+        rect(218,468+sparkle*3,6,8,1f,.94f,.57f);
+        if(flash>0){
+            rect(124,477,108,5,1f,.87f,.45f);
+            rect(132,407,96,5,1f,.87f,.45f);
+        }
+        // Raised pixel-style upgrade panels.
         float[][] buttons={{295,345},{237,287},{179,229},{121,171},{63,113},{8,55}};
-        for(int i=0;i<buttons.length;i++)rect(16,buttons[i][0],328,buttons[i][1]-buttons[i][0],i==5?.43f:.17f,i==5?.29f:.24f,i==5?.22f:.35f);
+        for(int i=0;i<buttons.length;i++){
+            float y=buttons[i][0], h=buttons[i][1]-y;
+            rect(16,y-3,328,h,.035f,.055f,.09f);
+            rect(16,y,328,h,i==5?.41f:.16f,i==5?.26f:.23f,i==5?.22f:.34f);
+            rect(16,y+h-5,328,5,i==5?.94f:.28f,i==5?.65f:.39f,i==5?.32f:.49f);
+            rect(24,y+10,25,25,i==5?.96f:.83f,i==5?.68f:.61f,i==5?.35f:.33f);
+            rect(29,y+15,15,15,.18f,.23f,.31f);
+        }
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        label("BOTTOM LIFE 3.0",28,606);
+        label("BOTTOM LIFE 3.1",28,606);
         label("Coins: "+fmt(coins)+"   +"+fmt(income())+"/sec",28,575);
         label("Gems "+fmt(gems)+"   Ore "+fmt(ore)+"   Souls "+fmt(souls),28,545);
-        label("TAP TO EARN  +"+fmt(tapPower()),55,481);
-        label("Street hustle",98,451);
-        label("Tap Lv."+tapLevel+"   COST "+fmt(tapCost()),28,325);
-        label("Workers Lv."+workerLevel+"   COST "+fmt(workerCost()),28,267);
-        label("MINE  Depth "+depth+"   +"+fmt(drillLevel*depth)+" ore",28,209);
-        label("Drill Lv."+drillLevel+"   COST "+fmt(drillCost()),28,151);
-        label("Dig deeper   COST "+fmt(mineCost()),28,93);
-        label("REBIRTH   100K coins   x"+rebirths,28,37);
+        label("TAP TO EARN  +"+fmt(tapPower()),72,501);
+        label("STREET HUSTLE",104,405);
+        label("TAP Lv."+tapLevel+"   "+fmt(tapCost()),58,325);
+        label("WORKERS Lv."+workerLevel+"   "+fmt(workerCost()),58,267);
+        label("MINE Depth "+depth+"   +"+fmt(drillLevel*depth)+" ore",58,209);
+        label("DRILL Lv."+drillLevel+"   "+fmt(drillCost()),58,151);
+        label("DIG DEEPER   "+fmt(mineCost()),58,93);
+        label("REBIRTH 100K   x"+rebirths,58,37);
         label(notice,18,351);
         batch.end();
     }
