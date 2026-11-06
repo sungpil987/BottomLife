@@ -52,6 +52,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int screen=0, career=0, claimed=0;
     private int questTier=0, questTapBase=0, questMineBase=0;
     private int mineActions=0;
+    private int mineMilestoneTier=0;
     private int mineBiomeCache=-1;
     private int growthMode=0;
     private int businessBuyCount=1;
@@ -111,6 +112,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         achievementFlags=save.getInteger("achievementFlags",0);
         questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
         questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
+        mineMilestoneTier=save.getInteger("mineMilestoneTier",mineActions/50);
         businessBuyCount=save.getInteger("businessBuyCount",1)==10?10:1;
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
@@ -229,6 +231,17 @@ public class BottomLifeGame extends ApplicationAdapter {
         questTapBase=totalTaps;questMineBase=mineActions;
         notice="임무 완료! 돈 +"+fmt(reward);persist();
     }
+    private int nextMineMilestone(){return (mineMilestoneTier+1)*50;}
+    private void claimMineMilestone(){
+        if(mineActions<nextMineMilestone()){notice="채굴 목표까지 "+(nextMineMilestone()-mineActions)+"회";return;}
+        mineMilestoneTier++;
+        int gemReward=2+mineMilestoneTier*2;
+        double coinReward=250.0*mineMilestoneTier*depth;
+        gems+=gemReward;coins+=coinReward;
+        notice="광산 목표 달성! 보석 +"+gemReward;
+        effectX=180;effectY=449;effectTimer=.5f;effectKind=0;
+        persist();
+    }
     private void mineOnce(boolean large){
         effectX=180;effectY=452;effectTimer=.5f;effectKind=1;
         mineImpactTimer=.34f;mineRewardTimer=1.3f;mineRewardKind=0;
@@ -257,6 +270,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("achievementFlags",achievementFlags);
         save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
         save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
+        save.putInteger("mineMilestoneTier",mineMilestoneTier);
         save.putInteger("businessBuyCount",businessBuyCount);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
@@ -323,7 +337,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
             if(y>=179&&y<229){double sold=ore*(2+depth);coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
-            if(y>=121&&y<171){if(gems>=10){gems-=10;coins+=1000*depth;notice="보석 교환 성공!";persist();}else notice="보석 10개 필요";return;}
+            if(y>=121&&y<171){claimMineMilestone();return;}
             if(y>=63&&y<113){collectReward();return;}
             if(y>=8&&y<55){screen=0;return;}
             return;
@@ -914,7 +928,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
             label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)),58,209);
-            label("보석 10개 교환",58,151);
+            label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),58,151);
             label("출석 보상",58,93);
             label("거리로 돌아가기",58,37);
         }
