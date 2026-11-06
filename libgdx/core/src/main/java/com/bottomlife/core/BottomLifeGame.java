@@ -881,7 +881,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 int next=nextShopMilestone(shops[i]);
                 label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
-                label("구매 "+fmt(shopCost(i)),60,y-30);
+                label("구매 "+fmt(shopCost(i)),60,y-27);
                 label(managers[i]>=3?"관리 MAX":"관리 "+fmt(managerCost(i)),237,y-4);
             }
             label("출석 보상 받기",58,37);
