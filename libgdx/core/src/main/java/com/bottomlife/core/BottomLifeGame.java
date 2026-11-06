@@ -531,9 +531,9 @@ public class BottomLifeGame extends ApplicationAdapter {
             batch.setProjectionMatrix(camera.combined);batch.begin();
             label("콘텐츠",129,589);
             label("거리에서 사업가로 성장하기",26,543);
-            label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),26,493);
-            label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",26,478);
-            label("환생 "+rebirths+"회  영혼 "+fmt(souls),26,462);
+            label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),26,267);
+            label("사업 "+businessLevels()+"레벨  광산 "+depth+"층",26,245);
+            label("환생 "+rebirths+"회  영혼 "+fmt(souls),26,223);
             label("사업",67,449);label("광산",230,449);
             label("성장",67,394);label("환생",230,394);
             label("출석 보상 받기",83,322);
