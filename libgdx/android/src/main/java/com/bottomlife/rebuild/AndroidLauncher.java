@@ -27,7 +27,7 @@ public class AndroidLauncher extends AndroidApplication {
     private void buildKoreanAtlas() throws Exception {
         String chars = " !+/:.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             + "밑바닥인생돈초당보석광물영혼터치획득거리노동자고용강화비용광산채굴깊이지하층확장환생필요부족성공자동수익보상상자발견희귀대박행운레벨무료판매코"
-            + "지속시간최대복귀오프라인수입업그레이드구매완료한글게임시작보유진행도목표달성추가";
+            + "지속시간최대복귀오프라인수입업그레이드구매완료한글게임시작보유진행도목표달성추가회해서콤터치돈초당광산채굴층상자발견환생보물자동판매희귀획득행운";
         StringBuilder unique = new StringBuilder();
         for(int i=0;i<chars.length();i++) if(unique.indexOf(String.valueOf(chars.charAt(i)))<0) unique.append(chars.charAt(i));
         int cols=16, cell=40, rows=(unique.length()+cols-1)/cols;
