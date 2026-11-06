@@ -497,11 +497,11 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
         if(screen==5){
-            if(y>=8&&y<=55){int tab=Math.min(4,(int)(x/72));screen=tab==4?5:tab;return;}
+            if(y>=8&&y<=55){int tab=Math.min(4,Math.max(0,(int)((x-5)/71)));screen=tab==4?5:tab;return;}
             if(y>=350&&y<365){if(x<180)cycleOutfit();else claimMastery();return;}
             if(y>=130&&y<235){int col=x<180?0:1;int row=y>=185?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
             if(y>=290&&y<350){collectReward();return;}
-            if(y>=18&&y<85){screen=0;notice="거리 노동";return;}
+            if(y>=588&&y<=632){screen=0;notice="거리 노동";return;}
             return;
         }
         if(screen==4){
@@ -510,7 +510,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=179&&y<229){buySoulTalent(2);return;}
             if(y>=157&&y<179){claimCareerRank();return;}
             if(y>=80&&y<=156){performRebirth();return;}
-            if(y>=18&&y<=74){screen=0;notice="거리 노동";return;}
+            if(y>=588&&y<=632){screen=0;notice="거리 노동";return;}
             return;
         }
         if(y>=8&&y<=55){
@@ -520,7 +520,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==3){
-            if(y>=358&&y<588){growthMode=1-growthMode;notice=growthMode==0?"성장 능력":"임무 보상";return;}
+            if(y>=505&&y<588){growthMode=1-growthMode;notice=growthMode==0?"성장 능력":"임무 보상";return;}
             if(growthMode==0){
                 if(y>=295&&y<345)upgradeGrowth(0);
                 else if(y>=237&&y<287)upgradeGrowth(1);
@@ -538,7 +538,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         if(screen==1){
             if(y>=510&&y<540){if(x<180)upgradeFranchise();else claimBusinessContract();return;}
-            if(y>=358&&y<588){
+            if(y>=540&&y<588){
                 if(x>=250){franchiseSelected=(franchiseSelected+1)%5;notice=shopNames[franchiseSelected]+" 지점 선택";}
                 else {businessBuyCount=businessBuyCount==1?10:1;notice="사업 일괄 구매 x"+businessBuyCount;}
                 persist();return;
@@ -551,8 +551,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(screen==2){
             if(y>=510&&y<540){if(x<180)claimMineBoss();else {mineGearSelected=(mineGearSelected+1)%3;notice=mineGearName(mineGearSelected)+" 선택";}return;}
             if(y>=369&&y<=505&&x>=18&&x<=342){mineNode(Math.min(2,Math.max(0,(int)((x-18)/108))));return;}
-            if(y>=505&&y<588){int route=Math.min(2,Math.max(0,(int)((x-18)/108)));selectExpedition(route);return;}
-            if(y>=358&&y<505){mineOnce(true);return;}
+            if(y>=540&&y<588){int route=Math.min(2,Math.max(0,(int)((x-18)/108)));selectExpedition(route);return;}
+            if(y>=358&&y<369){mineOnce(true);return;}
             if(y>=295&&y<345){buy(drillCost(),2);return;}
             if(y>=237&&y<287){buy(mineCost(),3);return;}
             if(y>=179&&y<229){double sold=ore*(2+depth)*mineSellMultiplier();coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
@@ -563,7 +563,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
         if(screen==0&&y>=510&&y<540){screen=4;notice="환생 보상 확인";return;}
         if(screen==0&&x>=260&&y>=472&&y<515){screen=5;notice="콘텐츠 선택";return;}
-        if(y>=358 && y<588){
+        if(y>=369 && y<=505){
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
             effectTimer=.5f;effectKind=0;
