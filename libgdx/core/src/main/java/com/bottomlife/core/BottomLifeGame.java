@@ -205,6 +205,12 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void input(float x,float y){
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
+        if(screen==5){
+            if(y>=365&&y<470){int col=x<180?0:1;int row=y>=420?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
+            if(y>=290&&y<350){collectReward();return;}
+            if(y>=18&&y<85){screen=0;notice="거리 노동";return;}
+            return;
+        }
         if(screen==4){
             if(y>=80&&y<=156){performRebirth();return;}
             if(y>=18&&y<=74){screen=0;notice="거리 노동";return;}
@@ -245,6 +251,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             if(y>=8&&y<55){screen=0;return;}
             return;
         }
+        if(screen==0&&x>=260&&y>=472&&y<515){screen=5;notice="콘텐츠 선택";return;}
         if(y>=358 && y<588){
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
@@ -467,6 +474,33 @@ public class BottomLifeGame extends ApplicationAdapter {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
+        if(screen==5){
+            rect(8,8,344,624,.04f,.06f,.11f);
+            rect(16,516,328,107,.11f,.16f,.26f);
+            rect(20,521,320,97,.17f,.24f,.35f);
+            for(int i=0;i<4;i++){
+                int col=i%2,row=i/2;
+                float x=18+col*165,y=420-row*55;
+                rect(x,y,158,49,.08f,.12f,.20f);
+                rect(x+3,y+4,152,41,.17f+i*.045f,.23f+i*.035f,.32f+i*.025f);
+                rect(x+8,y+10,32,29,.28f+i*.10f,.48f,.61f-i*.07f);
+                rect(x+13,y+15,22,19,.74f,.67f,.46f);
+                rect(x+15,y+18,18,13,.24f,.33f,.41f);
+            }
+            rect(18,288,324,61,.14f,.20f,.29f);
+            rect(21,294,318,50,.26f,.36f,.43f);
+            rect(18,22,324,60,.14f,.18f,.27f);
+            rect(22,27,316,50,.25f,.30f,.39f);
+            shapes.end();
+            batch.setProjectionMatrix(camera.combined);batch.begin();
+            label("콘텐츠",129,589);
+            label("거리에서 사업가로 성장하기",26,543);
+            label("사업",67,449);label("광산",230,449);
+            label("성장",67,394);label("환생",230,394);
+            label("출석 보상 받기",83,322);
+            label("거리로 돌아가기",83,53);
+            batch.end();return;
+        }
         if(screen==4){
             // Dedicated prestige view: confirmation is separate from the street action.
             rect(8,8,344,624,.035f,.045f,.09f);
@@ -611,6 +645,10 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(277,y+11,61,27,coins>=growthCost(i)?.62f:.30f,coins>=growthCost(i)?.46f:.32f,coins>=growthCost(i)?.24f:.38f);
             }
         }
+        if(screen==0){
+            rect(263,476,79,31,.32f,.24f,.16f);
+            rect(266,480,73,23,.71f,.49f,.25f);
+        }
         // Four navigation tabs with matching touch regions.
         for(int i=0;i<4;i++){
             float x=8+i*88;
@@ -624,6 +662,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.draw(scene,18,369,324,136);
         int actor=(rebirths>0||tapLevel>=30?2:0)+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        if(screen==0)label("콘텐츠",274,495);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
