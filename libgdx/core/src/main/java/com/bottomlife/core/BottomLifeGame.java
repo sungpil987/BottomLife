@@ -951,9 +951,9 @@ public class BottomLifeGame extends ApplicationAdapter {
             int index=koreanChars.indexOf(ch);
             if(index>=0){
                 TextureRegion region=new TextureRegion(koreanAtlas,(index%16)*40,(index/16)*40,40,40);
-                batch.draw(region,cursor,y-4,17,17);
+                batch.draw(region,cursor,y-2,12,12);
             }
-            cursor+=ch<128?9:16;
+            cursor+=ch<128?7:11;
         }
     }
     @Override public void render(){
@@ -1278,75 +1278,64 @@ public class BottomLifeGame extends ApplicationAdapter {
             batch.setColor(1f,1f,1f,1f);
         }
         if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
-        if(screen==1){
-            for(int i=0;i<5;i++){
-                float yy=295-i*58;
-                label(shopNames[i]+" Lv."+shops[i],82,yy+35);
-                label("초당 +"+fmt(shopIncome(i)),82,yy+17);
-                label(managers[i]>=3?"관리 완료":"관리 Lv."+managers[i],239,yy+28);
-            }
-        }
-        if(screen==0)label("콘텐츠",274,495);
-        if(screen==5)label("의상 "+outfitName(outfitSelected)+"  숙련 "+characterMastery,25,357);
-        label("거리",20,36);
-        label("사업",91,36);
-        label("광산",162,36);
-        label("성장",233,36);
-        label("메뉴",304,36);
-        label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
-        if(screen==0)label("환생",77,529);
-        else if(screen==1){label("지점 확장",66,529);label("사업 계약",230,529);}
-        else if(screen==2){label("심층 보상",64,529);label("장비 선택",229,529);}
-        else label("성장",77,529);
-        label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label(screen==1?"사업 구매 x"+businessBuyCount:screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층  연속 "+mineCombo+"회":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
+        // Compact, fixed-grid labels: no duplicate text on storefront cards.
+        label("거리",23,35);label("사업",94,35);label("광산",165,35);
+        label("성장",236,35);label("메뉴",307,35);
+        label("돈 "+fmt(coins)+"   초당 +"+fmt(income()),27,578);
+        label("보석 "+fmt(gems)+"   광물 "+fmt(ore)+"   영혼 "+fmt(souls),27,549);
         if(screen==0){
-            label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
-            label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
-            label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth*biomeMultiplier()),58,209);
-            label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
-            label("지하층 확장 비용 "+fmt(mineCost()),58,93);
-            label("환생 100K  "+rebirths+"회",58,613);
-        } else if(screen==1){
+            label("환생 확인",55,529);
+            label("거리 노동",30,500);
+            label("화면을 터치해서 돈을 벌어보자",36,353);
+            label("터치 강화 Lv."+tapLevel,65,325);label(fmt(tapCost()),290,325);
+            label("자동 수익 Lv."+workerLevel,65,267);label(fmt(workerCost()),290,267);
+            label("광산 채굴 "+depth+"층",65,209);
+            label("채굴 강화 Lv."+drillLevel,65,151);label(fmt(drillCost()),290,151);
+            label("지하층 확장",65,93);label(fmt(mineCost()),290,93);
+            label("환생 조건 100K",48,613);
+        }else if(screen==1){
+            label("지점 확장",55,529);label("계약 보상",223,529);
+            label("사업 구매 x"+businessBuyCount,30,499);
+            label("사업 Lv."+businessLevels(),30,353);
             for(int i=0;i<5;i++){
-                int y=326-i*58;
-                int next=nextShopMilestone(shops[i]);
-                label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
-                label("초당 +"+fmt(shopIncome(i)),60,y-13);
-                label("구매 x"+businessBuyCount+" "+fmt(bulkShopCost(i)),60,y-27);
-                label("관리 Lv."+managers[i]+(managers[i]>=3?" MAX":" "+fmt(managerCost(i))),237,y+5);
-                label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-14);
+                int y=295-i*58;
+                label(shopNames[i]+"  Lv."+shops[i],82,y+34);
+                label("수익 +"+fmt(shopIncome(i)),82,y+16);
+                label("구매 "+fmt(bulkShopCost(i)),82,y+2);
+                label("관리 "+managers[i]+"/3",246,y+31);
+                label(fmt(managerCost(i)),246,y+14);
             }
-            label("출석 보상 받기",58,613);
-        } else if(screen==3){
+            label("지점 "+shopNames[franchiseSelected],30,613);
+        }else if(screen==2){
+            label("심층 보상",55,529);label("장비 변경",223,529);
+            label("광산 "+depth+"층",30,499);
+            label("광산 탐험",30,353);
+            label("곡괭이 Lv."+drillLevel,65,325);label(fmt(drillCost()),290,325);
+            label("더 깊이 "+depth+"층",65,267);label(fmt(mineCost()),290,267);
+            label("광물 판매 "+fmt(ore),65,209);
+            label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),65,151);
+            label(mineGearName(mineGearSelected)+" x"+mineGearBulk,65,93);
+            label("보상 "+depth+"/"+((mineBossTier+1)*25)+"층",45,613);
+        }else{
+            label("성장 / 임무",55,529);
+            label(growthMode==0?"성장 능력":"임무 진행",30,499);
+            label("성장 임무",30,353);
             if(growthMode==0){
-                label("터치 수익 Lv."+growth[0]+" "+fmt(growthCost(0)),58,325);
-                label("자동 수익 Lv."+growth[1]+" "+fmt(growthCost(1)),58,267);
-                label("전체 수익 Lv."+growth[2]+" "+fmt(growthCost(2)),58,209);
-                label("임무 보상 화면",58,151);
-                label("출석 보상 받기",58,93);
-                label("거리로 돌아가기",58,613);
+                label("터치 수익 Lv."+growth[0],65,325);label(fmt(growthCost(0)),290,325);
+                label("자동 수익 Lv."+growth[1],65,267);label(fmt(growthCost(1)),290,267);
+                label("전체 수익 Lv."+growth[2],65,209);label(fmt(growthCost(2)),290,209);
+                label("임무 화면 열기",65,151);
+                label("출석 보상",65,93);
             }else{
-                label("임무 보상 받기 "+(questTier+1),58,325);
-                label("출석 보상 받기",58,267);
-                label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,209);
-                label("성장 능력 화면",58,151);
-                label("완료 "+missions+"  보석 "+fmt(gems),58,93);
-                label("거리로 돌아가기",58,37);
+                label("임무 보상 "+(questTier+1),65,325);
+                label("출석 보상",65,267);
+                label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),65,209);
+                label("성장 화면 열기",65,151);
+                label("완료 "+missions+"회",65,93);
             }
-        } else {
-            label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
-            label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
-            label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)*mineSellMultiplier()),58,209);
-            label("채굴 목표 "+mineActions+"/"+nextMineMilestone(),58,151);
-            label(mineGearName(mineGearSelected)+" x"+mineGearBulk+" "+fmt(mineGearBulkCost(mineGearSelected)),58,93);
-            label("x"+mineGearBulk,288,93);
-            label("심층 보상 "+depth+"/"+((mineBossTier+1)*25)+"층",58,613);
-            label("장비 변경",269,613);
         }
         if(tapFloatTimer>0 && screen==0)label("+"+fmt(lastTapEarned),147,463+tapFloatTimer*32);
-        label(notice,18,351);
+        label(notice.length()>28?notice.substring(0,28):notice,18,351);
         batch.end();
         // Overlay particles after the SpriteBatch scene so effects are never hidden behind terrain.
         if(effectTimer>0||(screen==2&&mineImpactTimer>0)||screen==2){
@@ -1435,13 +1424,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("직업 승급 "+rebirths+"/"+careerRankTarget(),36,166);
             batch.end();
         }
-        if(screen==1){
-            batch.begin();
-            label("지점 "+shopNames[franchiseSelected]+" "+franchises[franchiseSelected]+"단계",190,559);
-            label("지점 확장 "+fmt(franchiseCost(franchiseSelected)),28,613);
-            label("사업 계약 "+Math.max(0,businessLevels()-businessContractBase)+"/"+businessContractTarget(),190,613);
-            batch.end();
-        }
+
         if(screen==2){
             batch.begin();
             for(int route=0;route<3;route++){
