@@ -51,6 +51,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int mineActions=0;
     private int mineBiomeCache=-1;
     private int growthMode=0;
+    private int businessBuyCount=1;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
     private final int[] managers=new int[5];
@@ -107,6 +108,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         achievementFlags=save.getInteger("achievementFlags",0);
         questTier=save.getInteger("questTier",0);questTapBase=save.getInteger("questTapBase",0);
         questMineBase=save.getInteger("questMineBase",0);mineActions=save.getInteger("mineActions",0);
+        businessBuyCount=save.getInteger("businessBuyCount",1)==10?10:1;
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
@@ -157,14 +159,25 @@ public class BottomLifeGame extends ApplicationAdapter {
         persist();
     }
     private int businessLevels(){int n=0;for(int v:shops)n+=v;return n;}
+    private double bulkShopCost(int i){
+        double sum=0;
+        for(int n=0;n<businessBuyCount;n++)sum+=Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]+n));
+        return sum;
+    }
     private void purchaseShop(int i){
-        double price=shopCost(i);
-        if(coins<price){notice="돈 부족!";return;}
-        int oldMilestone=shopMilestone(shops[i]);
-        coins-=price;shops[i]++;
-        if(shopMilestone(shops[i])>oldMilestone){
-            gems+=shopMilestone(shops[i])*2;
-            notice=shopNames[i]+" 돌파! 수익 2배!";
+        double price=bulkShopCost(i);
+        if(!Double.isFinite(price)||coins<price){notice="사업 구매 자금 부족!";return;}
+        int previous=shops[i];
+        coins-=price;shops[i]+=businessBuyCount;
+        int gainedGems=0;
+        for(int threshold:new int[]{10,25,50,100}){
+            if(previous<threshold&&shops[i]>=threshold){
+                gainedGems+=shopMilestone(threshold)*2;
+            }
+        }
+        if(gainedGems>0){
+            gems+=gainedGems;
+            notice=shopNames[i]+" 돌파! 보석 +"+gainedGems;
             effectTimer=.5f;effectKind=0;effectX=180;effectY=449;
         }else notice=shopNames[i]+" Lv."+shops[i]+" 초당 +"+fmt(shopIncome(i));
         checkAchievements();persist();
@@ -238,6 +251,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("achievementFlags",achievementFlags);
         save.putInteger("questTier",questTier);save.putInteger("questTapBase",questTapBase);
         save.putInteger("questMineBase",questMineBase);save.putInteger("mineActions",mineActions);
+        save.putInteger("businessBuyCount",businessBuyCount);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
@@ -292,7 +306,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==1){
-            if(y>=358&&y<588){notice="사업 "+operatingShops()+"개 운영  제휴 x"+String.format(java.util.Locale.US,"%.1f",businessSynergy());return;}
+            if(y>=358&&y<588){businessBuyCount=businessBuyCount==1?10:1;notice="사업 일괄 구매 x"+businessBuyCount;persist();return;}
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){if(x>=235)hireManager(i);else purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
@@ -879,7 +893,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("임무",281,613);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label(screen==1?"사업 운영":screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label(screen==1?"사업 구매 x"+businessBuyCount+" (터치 변경)":screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
         label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
@@ -895,7 +909,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 label(shopNames[i]+" Lv."+shops[i]+(next==0?" MAX":" / "+next),60,y+5);
                 label("초당 +"+fmt(shopIncome(i)),60,y-13);
                 label(shopSpecialName(i)+" x"+String.format(java.util.Locale.US,"%.1f",shopSpecial(i)),237,y-23);
-                label("구매 "+fmt(shopCost(i)),60,y-27);
+                label("x"+businessBuyCount+" "+fmt(bulkShopCost(i)),60,y-27);
                 label(managers[i]>=3?"관리 MAX":"관리 "+fmt(managerCost(i)),237,y-4);
             }
             label("출석 보상 받기",58,37);
