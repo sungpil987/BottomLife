@@ -43,6 +43,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private float autoMineTimer;
     private float effectX=180,effectY=445,effectTimer;
     private float mineImpactTimer, mineRewardTimer;
+    private float mineShakeTimer;
+    private int mineCombo;
+    private float mineComboTimer;
     private int mineRewardKind;
     private double mineRewardAmount;
     private int effectKind;
@@ -229,7 +232,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void mineOnce(boolean large){
         effectX=180;effectY=452;effectTimer=.5f;effectKind=1;
         mineImpactTimer=.34f;mineRewardTimer=1.3f;mineRewardKind=0;
-        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier();
+        mineShakeTimer=.22f;
+        mineCombo=mineComboTimer>0?Math.min(30,mineCombo+1):1;
+        mineComboTimer=2.2f;
+        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier()*(1+Math.min(.5,(mineCombo-1)*.02));
         ore+=amount;mineActions++;flash=.16f;mineRewardAmount=amount;
         if(Math.random()<Math.min(.55,.04+depth*.004+mineBiome()*.025)){gems++;mineRewardKind=1;}
         if(Math.random()<.06+mineBiome()*.015){
@@ -615,9 +621,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;mineShakeTimer=Math.max(0,mineShakeTimer-delta);mineComboTimer=Math.max(0,mineComboTimer-delta);if(mineComboTimer==0)mineCombo=0;mineImpactTimer=Math.max(0,mineImpactTimer-delta);mineRewardTimer=Math.max(0,mineRewardTimer-delta);effectTimer=Math.max(0,effectTimer-delta);flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);tapFloatTimer=Math.max(0,tapFloatTimer-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
-        if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
+        if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth*biomeMultiplier();autoMineTimer-=5;}}
         if(saveTimer>=10){persist();saveTimer=0;}
         if(mineBiomeCache!=mineBiome())refreshMineBiome();
         Gdx.gl.glClearColor(.045f,.065f,.11f,1);Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -854,12 +860,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
-        batch.draw(scene,18,369,324,136);
+        float shake=screen==2&&mineShakeTimer>0?(float)Math.sin(elapsed*95)*mineShakeTimer*9:0;
+        batch.draw(scene,18+shake,369,324,136);
         int tier=Math.min(3,Math.max(Math.max(0,tapLevel/30),rebirths));
         int actor=tier*2+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         if(screen==0)batch.draw(streetForeground,18,369,324,136);
-        if(screen==2)batch.draw(mineForeground,18,369,324,136);
+        if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
         if(screen==0)label("콘텐츠",274,495);
         label("거리",18,613);
         label("사업",105,613);
@@ -868,7 +875,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
         label(screen==1?"사업 구매 x"+businessBuyCount+" (터치 변경)":screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
+        label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층  연속 "+mineCombo+"회":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
             label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
@@ -906,7 +913,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         } else {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
             label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
-            label("광물 전부 판매",58,209);
+            label("광물 "+fmt(ore)+" 판매 +"+fmt(ore*(2+depth)),58,209);
             label("보석 10개 교환",58,151);
             label("출석 보상",58,93);
             label("거리로 돌아가기",58,37);
