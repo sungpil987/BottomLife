@@ -256,12 +256,18 @@ public class BottomLifeGame extends ApplicationAdapter {
             rect(24,y+10,25,25,i==5?.96f:.83f,i==5?.68f:.61f,i==5?.35f:.33f);
             rect(29,y+15,15,15,.18f,.23f,.31f);
         }
+        // Visible tab hit targets matching the top navigation touch areas.
+        for(int i=0;i<3;i++){
+            float x=12+i*112;
+            rect(x,590,108,36,i==screen?.46f:.13f,i==screen?.34f:.19f,i==screen?.20f:.28f);
+            rect(x,590,108,3,i==screen?.97f:.30f,i==screen?.75f:.40f,i==screen?.39f:.51f);
+        }
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        label("거리",25,606);
-        label("사업",143,606);
-        label("광산",259,606);
+        label("거리",44,613);
+        label("사업",156,613);
+        label("광산",268,613);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
         label(screen==1?"사업 운영":screen==2?"광산 탐험":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
