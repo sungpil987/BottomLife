@@ -170,7 +170,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void input(float x,float y){
         if(x<0||x>W||y<0||y>H)return;
         if(y>=588){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
-        if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=179&&y<229){screen=0;}return;}
+        if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=8&&y<55){screen=0;}return;}
         if(screen==1){
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){purchaseShop(i);return;}
@@ -345,11 +345,11 @@ public class BottomLifeGame extends ApplicationAdapter {
             for(int i=0;i<5;i++)label(shopNames[i]+" "+shops[i]+" 비용 "+fmt(shopCost(i)),58,325-i*58);
             label("출석 보상 받기",58,37);
         } else if(screen==3){
-            label("임무 "+(questTier+1)+" 단계",58,325);
-            label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,267);
-            label("채굴 "+Math.max(0,mineActions-questMineBase)+"/"+questMineTarget(),58,209);
-            label("임무 완료 보상",58,151);
-            label("보석 "+fmt(gems)+"  환생 "+rebirths,58,93);
+            label("임무 보상 받기 "+(questTier+1),58,325);
+            label("출석 보상 받기",58,267);
+            label("터치 "+Math.max(0,totalTaps-questTapBase)+"/"+questTapTarget(),58,209);
+            label("채굴 "+Math.max(0,mineActions-questMineBase)+"/"+questMineTarget(),58,151);
+            label("완료 "+missions+"  보석 "+fmt(gems),58,93);
             label("거리로 돌아가기",58,37);
         } else {
             label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
