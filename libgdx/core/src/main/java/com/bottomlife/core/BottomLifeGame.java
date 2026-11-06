@@ -70,6 +70,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int businessContractTier=0,businessContractBase=0;
     private final int[] soulTalents=new int[3];
     private int careerRank=0;
+    private int outfitSelected=0;
+    private int outfitOwned=1;
+    private int characterMastery=0;
+    private int characterMasteryBase=0;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
     private final int[] managers=new int[5];
@@ -144,12 +148,37 @@ public class BottomLifeGame extends ApplicationAdapter {
         for(int i=0;i<5;i++)franchises[i]=Math.max(0,save.getInteger("franchise"+i,0));
         for(int i=0;i<3;i++)soulTalents[i]=Math.max(0,save.getInteger("soulTalent"+i,0));
         careerRank=Math.max(0,save.getInteger("careerRank",0));
+        outfitSelected=Math.max(0,Math.min(3,save.getInteger("outfitSelected",0)));
+        outfitOwned=save.getInteger("outfitOwned",1)|1;
+        if((outfitOwned&(1<<outfitSelected))==0)outfitSelected=0;
+        characterMastery=Math.max(0,save.getInteger("characterMastery",0));
+        characterMasteryBase=Math.max(0,save.getInteger("characterMasteryBase",0));
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
         coins+=seconds*income()*0.5;
         if(seconds>60) notice="오프라인 수익 획득!";
+    }
+    private String outfitName(int i){return i==0?"거리의 옷":i==1?"작업복":i==2?"사업가 정장":"전설의 코트";}
+    private double outfitCost(int i){return i==0?0:i==1?15:i==2?75:250;}
+    private void cycleOutfit(){
+        int next=(outfitSelected+1)%4;
+        if((outfitOwned&(1<<next))!=0){outfitSelected=next;notice=outfitName(next)+" 착용";persist();return;}
+        if(gems<outfitCost(next)){notice=outfitName(next)+" 보석 "+fmt(outfitCost(next))+"개 필요";return;}
+        gems-=outfitCost(next);outfitOwned|=1<<next;outfitSelected=next;
+        notice=outfitName(next)+" 해금!";
+        persist();
+    }
+    private int masteryTarget(){return 100+characterMastery*75;}
+    private void claimMastery(){
+        int progress=totalTaps-characterMasteryBase;
+        if(progress<masteryTarget()){notice="숙련 목표 "+Math.max(0,progress)+"/"+masteryTarget();return;}
+        characterMasteryBase=totalTaps;
+        characterMastery++;
+        gems+=characterMastery*2;
+        notice="캐릭터 숙련 "+characterMastery+"단계! 보석 +"+(characterMastery*2);
+        persist();
     }
     private double multiplier(){return (1+souls*0.15)*(1+growth[2]*.05)*(1+soulTalents[0]*.18);}
     private double soulTalentCost(int i){return Math.ceil((i+1)*2.0*Math.pow(1.8,soulTalents[i]));}
@@ -173,11 +202,11 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void performRebirth(){double gain=rebirthGain();if(gain<1){notice="환생 필요: 100K 돈";return;}souls+=gain;rebirths++;career=Math.max(career,rebirths);coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;screen=0;notice="환생 성공! 영혼 +"+fmt(gain);checkAchievements();persist();}
     private double growthCost(int i){return Math.ceil(new double[]{200,800,2500}[i]*Math.pow(1.65,growth[i]));}
     private void upgradeGrowth(int i){double cost=growthCost(i);if(coins<cost){notice="성장 비용 부족!";return;}coins-=cost;growth[i]++;notice="능력 성장 Lv."+growth[i];persist();}
-    private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1)*(1+soulTalents[1]*.22));}
+    private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1)*(1+soulTalents[1]*.22)*(1+characterMastery*.035));}
     private double income(){
         double total=workerLevel*(1+workerLevel*0.45)*multiplier()*(1+career*.05);
         for(int i=0;i<shops.length;i++)total+=shopIncome(i);
-        return total*(1+growth[1]*.10);
+        return total*(1+growth[1]*.10)*(1+characterMastery*.025);
     }
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
     private int shopMilestone(int level){return level>=100?4:level>=50?3:level>=25?2:level>=10?1:0;}
@@ -429,6 +458,10 @@ public class BottomLifeGame extends ApplicationAdapter {
         for(int i=0;i<5;i++)save.putInteger("franchise"+i,franchises[i]);
         for(int i=0;i<3;i++)save.putInteger("soulTalent"+i,soulTalents[i]);
         save.putInteger("careerRank",careerRank);
+        save.putInteger("outfitSelected",outfitSelected);
+        save.putInteger("outfitOwned",outfitOwned);
+        save.putInteger("characterMastery",characterMastery);
+        save.putInteger("characterMasteryBase",characterMasteryBase);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
@@ -454,6 +487,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
         if(screen==5){
+            if(y>=350&&y<365){if(x<180)cycleOutfit();else claimMastery();return;}
             if(y>=365&&y<470){int col=x<180?0:1;int row=y>=420?0:1;screen=row==0?(col==0?1:2):(col==0?3:4);notice="콘텐츠 이동";return;}
             if(y>=290&&y<350){collectReward();return;}
             if(y>=18&&y<85){screen=0;notice="거리 노동";return;}
@@ -1050,12 +1084,13 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         float shake=screen==2&&mineShakeTimer>0?(float)Math.sin(elapsed*95)*mineShakeTimer*9:0;
         batch.draw(scene,18+shake,369,324,136);
-        int tier=Math.min(3,Math.max(Math.max(0,tapLevel/30),rebirths));
+        int tier=outfitSelected;
         int actor=tier*2+((int)(elapsed*3)%2);
         batch.draw(actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         if(screen==0)batch.draw(streetForeground,18,369,324,136);
         if(screen==2)batch.draw(mineForeground,18+shake,369,324,136);
         if(screen==0)label("콘텐츠",274,495);
+        if(screen==5)label("의상 "+outfitName(outfitSelected)+"  숙련 "+characterMastery,25,357);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
@@ -1184,6 +1219,12 @@ public class BottomLifeGame extends ApplicationAdapter {
             shapes.end();
         }
         // Draw labels last: previously the ore overlay covered reward text.
+        if(screen==5){
+            batch.begin();
+            label("의상 변경",30,350);
+            label("숙련 보상 "+Math.max(0,totalTaps-characterMasteryBase)+"/"+masteryTarget(),185,350);
+            batch.end();
+        }
         if(screen==4){
             batch.begin();
             label("전생의 힘 "+soulTalents[0]+" 비용 "+fmt(soulTalentCost(0)),36,325);
