@@ -25,6 +25,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private Texture streetSprite, mineSprite, shopSprite, streetArt;
     private Texture[] actors=new Texture[8];
     private Texture[] businessPortraits=new Texture[5];
+    private Texture[] oreCrystals=new Texture[4];
+    private Texture mineGlow;
     private Texture streetForeground, mineForeground;
     private Texture pngActor;
     private String koreanChars;
@@ -100,6 +102,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
         for(int i=0;i<businessPortraits.length;i++)businessPortraits[i]=makeBusinessPortrait(i);
+        for(int i=0;i<oreCrystals.length;i++)oreCrystals[i]=makeOreCrystal(i);
+        mineGlow=makeMineGlow();
         streetForeground=makeForeground(0);
         mineForeground=makeForeground(1);
         for(int i=0;i<actors.length;i++)actors[i]=makeActor(i);
@@ -574,6 +578,42 @@ public class BottomLifeGame extends ApplicationAdapter {
 
     private void pixel(Pixmap p,int x,int y,int w,int h,String color){
         p.setColor(Color.valueOf(color));p.fillRectangle(x,y,w,h);
+    }
+    // Separate transparent crystal sprites: four ore families with facet shading and rim light.
+    private Texture makeOreCrystal(int type){
+        Pixmap p=new Pixmap(48,48,Pixmap.Format.RGBA8888);
+        p.setColor(0,0,0,0);p.fill();
+        String[] base={"576f83","477f9d","ad8346","7957a0"};
+        String[] edge={"263a52","17394f","594027","39264f"};
+        String[] shine={"b8e2ee","a0f4ff","ffe3a2","e9b8ff"};
+        String[] mid={"779eb0","5ec7e0","e2b967","b88bd9"};
+        pixel(p,10,35,29,8,edge[type]);
+        pixel(p,14,29,23,10,base[type]);
+        pixel(p,19,7,11,31,edge[type]);
+        pixel(p,21,4,7,29,shine[type]);
+        pixel(p,24,8,9,26,mid[type]);
+        pixel(p,25,13,4,21,base[type]);
+        pixel(p,7,20,13,18,edge[type]);
+        pixel(p,10,16,8,19,mid[type]);
+        pixel(p,11,19,3,13,shine[type]);
+        pixel(p,32,18,10,20,edge[type]);
+        pixel(p,34,14,5,20,mid[type]);
+        pixel(p,35,18,2,12,shine[type]);
+        pixel(p,16,39,18,4,base[type]);
+        for(int i=0;i<4;i++)pixel(p,5+i*11,42-(i%2)*3,3,2,shine[type]);
+        Texture t=new Texture(p);t.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);p.dispose();return t;
+    }
+    private Texture makeMineGlow(){
+        Pixmap p=new Pixmap(64,64,Pixmap.Format.RGBA8888);
+        p.setColor(0,0,0,0);p.fill();
+        for(int y=0;y<64;y++)for(int x=0;x<64;x++){
+            float dx=x-31.5f,dy=y-31.5f;
+            float radius=(float)Math.sqrt(dx*dx+dy*dy);
+            float alpha=Math.max(0f,(1f-radius/32f));
+            alpha=alpha*alpha*.32f;
+            p.setColor(.22f,.70f,1f,alpha);p.drawPixel(x,y);
+        }
+        Texture t=new Texture(p);t.setFilter(Texture.TextureFilter.Linear,Texture.TextureFilter.Linear);p.dispose();return t;
     }
     // Distinct, independently rendered storefront thumbnails; not a flattened UI screenshot.
     private Texture makeBusinessPortrait(int kind){
@@ -1172,6 +1212,18 @@ public class BottomLifeGame extends ApplicationAdapter {
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
         float shake=screen==2&&mineShakeTimer>0?(float)Math.sin(elapsed*95)*mineShakeTimer*9:0;
         batch.draw(scene,18+shake,369,324,136);
+        if(screen==2){
+            for(int lane=0;lane<3;lane++){
+                int type=mineNodeType(lane);
+                float cx=72+lane*108;
+                float pulse=.88f+.12f*(float)Math.sin(elapsed*3+lane*1.8f);
+                batch.setColor(1f,1f,1f,.62f);
+                batch.draw(mineGlow,cx-39,393,78,78);
+                batch.setColor(1f,1f,1f,1f);
+                float crystalSize=40*pulse;
+                batch.draw(oreCrystals[type],cx-crystalSize/2,415-crystalSize/2,crystalSize,crystalSize);
+            }
+        }
         if(screen==1){
             for(int i=0;i<5;i++){
                 float cy=295-i*58;
@@ -1367,5 +1419,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         }
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)if(t!=null)t.dispose();for(Texture t:businessPortraits)if(t!=null)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetForeground!=null)streetForeground.dispose();if(mineForeground!=null)mineForeground.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)if(t!=null)t.dispose();for(Texture t:businessPortraits)if(t!=null)t.dispose();for(Texture t:oreCrystals)if(t!=null)t.dispose();if(mineGlow!=null)mineGlow.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
