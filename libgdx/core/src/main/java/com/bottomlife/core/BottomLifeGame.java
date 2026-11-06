@@ -30,6 +30,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private String notice = "터치해서 돈 획득!";
     private int combo, treasures, missions;
     private float comboTime;
+    private int screen=0, career=0, claimed=0;
+    private final int[] shops=new int[5];
+    private final String[] shopNames={"노점","분식점","편의점","피시방","카페"};
+    private final double[] shopBase={100,2000,30000,400000,5000000};
     private static final float W=360, H=640;
 
     @Override public void create() {
@@ -52,6 +56,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         drillLevel=save.getInteger("drill",1); depth=save.getInteger("depth",1);
         rebirths=save.getInteger("rebirths",0);
         treasures=save.getInteger("treasures",0); missions=save.getInteger("missions",0);
+        career=save.getInteger("career",0);claimed=save.getInteger("claimed",0);
+        for(int i=0;i<shops.length;i++)shops[i]=save.getInteger("shop"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
         coins+=seconds*income()*0.5;
@@ -59,7 +65,23 @@ public class BottomLifeGame extends ApplicationAdapter {
     }
     private double multiplier(){return 1+souls*0.15;}
     private double tapPower(){return Math.ceil((1+tapLevel*2)*multiplier());}
-    private double income(){return workerLevel*(1+workerLevel*0.45)*multiplier();}
+    private double income(){
+        double total=workerLevel*(1+workerLevel*0.45);
+        for(int i=0;i<shops.length;i++)total+=shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i]);
+        return total*multiplier()*(1+career*.05);
+    }
+    private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
+    private void purchaseShop(int i){
+        double price=shopCost(i);
+        if(coins<price){notice="돈 부족!";return;}
+        coins-=price;shops[i]++;notice=shopNames[i]+" 사업 강화!";persist();
+    }
+    private void collectReward(){
+        long today=System.currentTimeMillis()/86400000L;
+        if(claimed==(int)(today%2000000000L)){notice="오늘 보상 완료!";return;}
+        double reward=Math.max(100, income()*120+tapPower()*50);
+        coins+=reward;claimed=(int)(today%2000000000L);notice="출석 보상 +"+fmt(reward);persist();
+    }
     private double tapCost(){return Math.ceil(20*Math.pow(1.22,tapLevel-1));}
     private double workerCost(){return Math.ceil(50*Math.pow(1.3,workerLevel));}
     private double drillCost(){return Math.ceil(30*Math.pow(1.25,drillLevel-1));}
@@ -71,6 +93,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("drill",drillLevel); save.putInteger("depth",depth);
         save.putInteger("rebirths",rebirths);
         save.putInteger("treasures",treasures); save.putInteger("missions",missions);
+        save.putInteger("career",career);save.putInteger("claimed",claimed);
+        for(int i=0;i<shops.length;i++)save.putInteger("shop"+i,shops[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
     private String fmt(double v) {
@@ -91,6 +115,23 @@ public class BottomLifeGame extends ApplicationAdapter {
         persist();
     }
     private void input(float x,float y){
+        if(y>=590){screen=x<120?0:x<240?1:2;notice=screen==0?"거리 노동":screen==1?"사업 운영":"광산 탐험";return;}
+        if(screen==1){
+            int[] tops={345,287,229,171,113};
+            for(int i=0;i<5;i++)if(y>=tops[i]-50 && y<tops[i]){purchaseShop(i);return;}
+            if(y>=8&&y<55){collectReward();return;}
+            return;
+        }
+        if(screen==2){
+            if(y>=360&&y<=510){ore+=drillLevel*depth*2;coins+=depth*drillLevel;flash=.16f;notice="광산 채굴 성공!";return;}
+            if(y>=295&&y<345){buy(drillCost(),2);return;}
+            if(y>=237&&y<287){buy(mineCost(),3);return;}
+            if(y>=179&&y<229){double sold=ore*(2+depth);coins+=sold;ore=0;notice="광물 판매 +"+fmt(sold);persist();return;}
+            if(y>=121&&y<171){if(gems>=10){gems-=10;coins+=1000*depth;notice="보석 교환 성공!";persist();}else notice="보석 10개 필요";return;}
+            if(y>=63&&y<113){collectReward();return;}
+            if(y>=8&&y<55){screen=0;return;}
+            return;
+        }
         if(y>=360 && y<=510){
             combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
             double earned=tapPower()*(1+Math.min(2,combo/20.0));
@@ -119,7 +160,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         else if(y>=8 && y<55){
             if(coins<100000){notice="환생 필요: 100K 돈";return;}
             double gain=Math.max(1,Math.floor(Math.sqrt(coins/100000)));
-            souls+=gain;rebirths++;
+            souls+=gain;rebirths++;career=Math.max(career,rebirths);
             coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;
             notice="환생 성공! 영혼 +"+fmt(gain);persist();
         }
@@ -212,17 +253,31 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        label("밑바닥 인생 3.2",28,606);
+        label("거리",25,606);
+        label("사업",143,606);
+        label("광산",259,606);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label("터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label("거리 노동",125,405);
-        label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
-        label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
-        label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth),58,209);
-        label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
-        label("지하층 확장 비용 "+fmt(mineCost()),58,93);
-        label("환생 100K  "+rebirths+"회",58,37);
+        label(screen==1?"사업 운영":screen==2?"광산 탐험":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":"거리 노동",125,405);
+        if(screen==0){
+            label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
+            label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
+            label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth),58,209);
+            label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
+            label("지하층 확장 비용 "+fmt(mineCost()),58,93);
+            label("환생 100K  "+rebirths+"회",58,37);
+        } else if(screen==1){
+            for(int i=0;i<5;i++)label(shopNames[i]+" "+shops[i]+" 비용 "+fmt(shopCost(i)),58,325-i*58);
+            label("출석 보상 받기",58,37);
+        } else {
+            label("곡괭이 강화 "+drillLevel+" "+fmt(drillCost()),58,325);
+            label("더 깊이 "+depth+"층 "+fmt(mineCost()),58,267);
+            label("광물 전부 판매",58,209);
+            label("보석 10개 교환",58,151);
+            label("출석 보상",58,93);
+            label("거리로 돌아가기",58,37);
+        }
         label(notice,18,351);
         batch.end();
     }
