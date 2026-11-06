@@ -255,21 +255,79 @@ public class BottomLifeGame extends ApplicationAdapter {
             }
             pixel(p,0,106,180,14,"292838");
         } else {
-            pixel(p,0,75,180,45,"34333c");
-            pixel(p,0,101,180,19,"232631");
-            for(int i=0;i<7;i++){
-                int x=i*29-8, h=25+random.nextInt(40);
-                pixel(p,x,75-h,27,h,mode==2?"38394a":"3a4056");
-                for(int wy=78-h;wy<71;wy+=9)for(int wx=x+5;wx<x+24;wx+=9)
-                    if(random.nextInt(4)>0)pixel(p,wx,wy,4,5,"e3a866");
+            // Four depth layers: moonlit skyline, lit windows, shops and wet road.
+            pixel(p,0,0,180,120,"111b32");
+            pixel(p,0,0,180,29,"1b2745");
+            pixel(p,125,9,17,17,"b2b8d7");
+            pixel(p,129,10,10,14,"e4ddce");
+            for(int i=0;i<11;i++){
+                int x=i*19-5,h=19+random.nextInt(27);
+                pixel(p,x,65-h,18,h+20,i%2==0?"26304a":"303650");
+                for(int yy=69-h;yy<66;yy+=7)for(int xx=x+3;xx<x+16;xx+=6)
+                    if(random.nextInt(4)>0)pixel(p,xx,yy,3,4,i%3==0?"d5a66d":"b58a6a");
             }
-            pixel(p,8,51,53,47,mode==2?"6a4540":"594147");
-            pixel(p,12,56,45,30,"182b38");
-            pixel(p,8,47,53,9,"d47d42");
-            for(int i=0;i<5;i++)pixel(p,13+i*9,48,5,6,"ffe4a3");
-            pixel(p,126,54,45,44,"454455");
-            pixel(p,131,59,35,29,"213748");
-            pixel(p,0,102,180,2,"a99a76");
+            pixel(p,0,77,180,43,"302b3e");
+            pixel(p,0,94,180,26,"202636");
+            for(int i=0;i<18;i++){
+                int x=i*11;
+                pixel(p,x,96,8,1,"66536a");
+                pixel(p,x+3,109,7,1,"4e4457");
+                if(i%3==0)pixel(p,x+2,104,5,1,"ae7959");
+            }
+            // Left street food cart, striped canopy and warm interior.
+            pixel(p,5,45,55,50,"3d3141");
+            pixel(p,9,50,47,36,"604253");
+            pixel(p,12,56,41,23,"172b3b");
+            pixel(p,8,45,49,10,"bb654c");
+            for(int i=0;i<6;i++)pixel(p,9+i*8,45,6,9,i%2==0?"e8b37c":"8f4551");
+            pixel(p,10,83,45,5,"7b5155");
+            pixel(p,11,88,5,10,"171e2c");
+            pixel(p,49,88,5,10,"171e2c");
+            pixel(p,18,63,25,2,"e6a868");
+            pixel(p,18,65,4,11,"bd8659");
+            // Right convenience kiosk, signage, shelves, door.
+            pixel(p,127,43,49,54,"383349");
+            pixel(p,131,50,42,38,"243448");
+            pixel(p,128,41,47,10,"bb735a");
+            pixel(p,133,45,37,4,"f4c47f");
+            pixel(p,136,59,31,3,"987b73");
+            pixel(p,136,72,31,3,"987b73");
+            for(int i=0;i<5;i++){
+                pixel(p,137+i*6,62,4,9,i%2==0?"6eb4b8":"e2a26c");
+                pixel(p,137+i*6,76,4,7,i%2==0?"a6a3ce":"d1a875");
+            }
+            pixel(p,119,45,3,52,"786c68");
+            pixel(p,116,48,9,5,"eac181");
+            pixel(p,119,52,3,7,"c89e62");
+            // Neon vending machine and sidewalk clutter.
+            pixel(p,66,60,19,33,"2b5269");
+            pixel(p,69,64,13,19,"96c3c5");
+            for(int i=0;i<3;i++)for(int j=0;j<2;j++)
+                pixel(p,71+i*4,67+j*7,3,5,(i+j)%2==0?"e3a2a2":"4f8ca6");
+            pixel(p,66,89,19,3,"c9d4c2");
+            pixel(p,90,94,13,5,"5a4449");
+            pixel(p,92,90,8,4,"a47a5e");
+            // Flowering tree canopy and drifting petals.
+            pixel(p,2,34,4,60,"5e4351");
+            pixel(p,4,40,23,3,"654354");
+            for(int i=0;i<100;i++){
+                int x=random.nextInt(69),y=random.nextInt(44);
+                if(x<45||y<26)pixel(p,x,y,3+random.nextInt(4),2+random.nextInt(3),
+                    i%3==0?"f5b6bf":i%3==1?"c87e9f":"e99cae");
+            }
+            for(int i=0;i<24;i++){
+                int x=random.nextInt(180),y=32+random.nextInt(83);
+                pixel(p,x,y,2,2,i%2==0?"e8a2b3":"dfb18d");
+            }
+            // Street lamps and reflections.
+            for(int lamp=0;lamp<2;lamp++){
+                int x=lamp==0?88:177;
+                pixel(p,x,54,2,42,"3b3948");
+                pixel(p,x-4,53,10,3,"b68d6a");
+                pixel(p,x-2,56,6,5,"f8d58b");
+                pixel(p,x-4,101,9,2,"ae825d");
+                pixel(p,x-2,106,5,1,"8b735e");
+            }
         }
         for(int i=0;i<18;i++){
             int sx=random.nextInt(176),sy=random.nextInt(90);
