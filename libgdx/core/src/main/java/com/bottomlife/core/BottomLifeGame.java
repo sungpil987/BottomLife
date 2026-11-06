@@ -22,7 +22,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private SpriteBatch batch;
     private BitmapFont font;
     private Texture koreanAtlas;
-    private Texture streetSprite, mineSprite, shopSprite;
+    private Texture streetSprite, mineSprite, shopSprite, streetArt;
     private Texture[] actors=new Texture[4];
     private Texture pngActor;
     private String koreanChars;
@@ -63,6 +63,8 @@ public class BottomLifeGame extends ApplicationAdapter {
             koreanChars = Gdx.files.local("korean_chars.txt").readString("UTF-8");
         } catch(Exception ex) { Gdx.app.error("BottomLife","Korean font atlas unavailable",ex); }
         streetSprite=makePixelScene(0);
+        try {streetArt=new Texture(Gdx.files.internal("street_art.png"));streetArt.setFilter(Texture.TextureFilter.Nearest,Texture.TextureFilter.Nearest);}
+        catch(Exception ex){Gdx.app.error("BottomLife","Street asset unavailable",ex);}
         mineSprite=makePixelScene(1);
         shopSprite=makePixelScene(2);
         for(int i=0;i<4;i++)actors[i]=makeActor(i);
@@ -454,9 +456,9 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         Texture scene=screen==2?mineSprite:screen==1?shopSprite:streetSprite;
-        batch.draw(scene,18,369,324,136);
+        batch.draw(screen==0&&streetArt!=null?streetArt:scene,18,369,324,136);
         int actor=(rebirths>0?2:0)+((int)(elapsed*3)%2);
-        batch.draw(pngActor!=null&&rebirths==0?pngActor:actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
+        if(screen!=0||streetArt==null)batch.draw(pngActor!=null&&rebirths==0?pngActor:actors[actor],149,389+((int)(elapsed*3)%2)*2+(flash>0?3:0),76,113);
         label("거리",18,613);
         label("사업",105,613);
         label("광산",193,613);
@@ -495,5 +497,5 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();streetSprite.dispose();if(streetArt!=null)streetArt.dispose();mineSprite.dispose();shopSprite.dispose();for(Texture t:actors)t.dispose();if(pngActor!=null)pngActor.dispose();batch.dispose();shapes.dispose();}
 }
