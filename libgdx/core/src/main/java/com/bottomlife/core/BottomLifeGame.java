@@ -4,6 +4,8 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -16,6 +18,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private ShapeRenderer shapes;
     private SpriteBatch batch;
     private BitmapFont font;
+    private Texture koreanAtlas;
+    private String koreanChars;
     private OrthographicCamera camera;
     private Viewport viewport;
     private Preferences save;
@@ -23,7 +27,9 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double coins, gems, ore, souls;
     private int tapLevel, workerLevel, drillLevel, depth, rebirths;
     private float timer, saveTimer, flash, elapsed;
-    private String notice = "Tap the street to earn!";
+    private String notice = "터치해서 돈 획득!";
+    private int combo, treasures, missions;
+    private float comboTime;
     private static final float W=360, H=640;
 
     @Override public void create() {
@@ -31,6 +37,11 @@ public class BottomLifeGame extends ApplicationAdapter {
         batch = new SpriteBatch();
         font = new BitmapFont();
         font.getData().setScale(1.35f);
+        try {
+            koreanAtlas = new Texture(Gdx.files.local("korean_atlas.png"));
+            koreanAtlas.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+            koreanChars = Gdx.files.local("korean_chars.txt").readString("UTF-8");
+        } catch(Exception ex) { Gdx.app.error("BottomLife","Korean font atlas unavailable",ex); }
         camera = new OrthographicCamera();
         viewport = new FitViewport(W,H,camera);
         viewport.update(Gdx.graphics.getWidth(),Gdx.graphics.getHeight(),true);
@@ -40,10 +51,11 @@ public class BottomLifeGame extends ApplicationAdapter {
         tapLevel=save.getInteger("tap",1); workerLevel=save.getInteger("workers",0);
         drillLevel=save.getInteger("drill",1); depth=save.getInteger("depth",1);
         rebirths=save.getInteger("rebirths",0);
+        treasures=save.getInteger("treasures",0); missions=save.getInteger("missions",0);
         long last=save.getLong("last",System.currentTimeMillis());
         double seconds=Math.min(14400,Math.max(0,(System.currentTimeMillis()-last)/1000.0));
         coins+=seconds*income()*0.5;
-        if(seconds>60) notice="Offline earnings collected!";
+        if(seconds>60) notice="오프라인 수익 획득!";
     }
     private double multiplier(){return 1+souls*0.15;}
     private double tapPower(){return Math.ceil((1+tapLevel*2)*multiplier());}
@@ -58,6 +70,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("tap",tapLevel); save.putInteger("workers",workerLevel);
         save.putInteger("drill",drillLevel); save.putInteger("depth",depth);
         save.putInteger("rebirths",rebirths);
+        save.putInteger("treasures",treasures); save.putInteger("missions",missions);
         save.putLong("last",System.currentTimeMillis()); save.flush();
     }
     private String fmt(double v) {
@@ -68,33 +81,47 @@ public class BottomLifeGame extends ApplicationAdapter {
         return String.valueOf((long)v);
     }
     private void buy(double price,int action){
-        if(coins<price){notice="Not enough coins!";return;}
+        if(coins<price){notice="돈 부족!";return;}
         coins-=price;
         if(action==0)tapLevel++;
         if(action==1)workerLevel++;
         if(action==2)drillLevel++;
         if(action==3)depth++;
-        notice="Upgrade purchased!";
+        notice="강화 성공!";
         persist();
     }
     private void input(float x,float y){
-        if(y>=360 && y<=510){coins+=tapPower();flash=0.16f;notice="+"+fmt(tapPower())+" coins";return;}
+        if(y>=360 && y<=510){
+            combo=comboTime>0?Math.min(100,combo+1):1;comboTime=2.0f;
+            double earned=tapPower()*(1+Math.min(2,combo/20.0));
+            coins+=earned;flash=0.16f;notice="+"+fmt(earned)+" 돈  콤보 "+combo;
+            if(Math.random()<0.005){gems++;notice="행운! 보석 +1";}
+            return;
+        }
         if(y>=295 && y<345)buy(tapCost(),0);
         else if(y>=237 && y<287)buy(workerCost(),1);
         else if(y>=179 && y<229){
             ore+=drillLevel*depth;
             if(Math.random()<Math.min(0.45,0.05+depth*0.005))gems++;
-            notice="Mined +"+fmt(drillLevel*depth)+" ore";
+            if(Math.random()<0.08){
+                double bonus=100*depth*drillLevel;
+                coins+=bonus;treasures++;notice="보물상자 발견! +"+fmt(bonus)+" 돈";
+            } else notice="광물 +"+fmt(drillLevel*depth)+" 획득";
+            if(ore>=100){
+                double sold=Math.floor(ore/100)*100;
+                ore-=sold;coins+=sold*(2+depth);
+                notice="광물 자동 판매! +"+fmt(sold*(2+depth))+" 돈";
+            }
             persist();
         }
         else if(y>=121 && y<171)buy(drillCost(),2);
         else if(y>=63 && y<113)buy(mineCost(),3);
         else if(y>=8 && y<55){
-            if(coins<100000){notice="Rebirth requires 100K coins";return;}
+            if(coins<100000){notice="환생 필요: 100K 돈";return;}
             double gain=Math.max(1,Math.floor(Math.sqrt(coins/100000)));
             souls+=gain;rebirths++;
             coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;
-            notice="Reborn! +"+fmt(gain)+" souls";persist();
+            notice="환생 성공! 영혼 +"+fmt(gain);persist();
         }
     }
     @Override public void resize(int width,int height){viewport.update(width,height,true);}
@@ -102,11 +129,21 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.setColor(r,g,b,1);shapes.rect(x,y,w,h);
     }
     private void label(String s,float x,float y){
-        font.draw(batch,s,x,y);
+        if(koreanAtlas==null || koreanChars==null){font.draw(batch,s,x,y);return;}
+        float cursor=x;
+        for(int i=0;i<s.length();i++){
+            char ch=s.charAt(i);
+            int index=koreanChars.indexOf(ch);
+            if(index>=0){
+                TextureRegion region=new TextureRegion(koreanAtlas,(index%16)*40,(index/16)*40,40,40);
+                batch.draw(region,cursor,y-4,19,19);
+            }
+            cursor+=ch<128?10:18;
+        }
     }
     @Override public void render(){
         float delta=Math.min(Gdx.graphics.getDeltaTime(),0.1f);
-        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);
+        timer+=delta;saveTimer+=delta;elapsed+=delta;flash=Math.max(0,flash-delta);comboTime=Math.max(0,comboTime-delta);
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(saveTimer>=10){persist();saveTimer=0;}
         if(Gdx.input.justTouched()){
@@ -175,20 +212,20 @@ public class BottomLifeGame extends ApplicationAdapter {
         shapes.end();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        label("BOTTOM LIFE 3.1",28,606);
-        label("Coins: "+fmt(coins)+"   +"+fmt(income())+"/sec",28,575);
-        label("Gems "+fmt(gems)+"   Ore "+fmt(ore)+"   Souls "+fmt(souls),28,545);
-        label("TAP TO EARN  +"+fmt(tapPower()),72,501);
-        label("STREET HUSTLE",104,405);
-        label("TAP Lv."+tapLevel+"   "+fmt(tapCost()),58,325);
-        label("WORKERS Lv."+workerLevel+"   "+fmt(workerCost()),58,267);
-        label("MINE Depth "+depth+"   +"+fmt(drillLevel*depth)+" ore",58,209);
-        label("DRILL Lv."+drillLevel+"   "+fmt(drillCost()),58,151);
-        label("DIG DEEPER   "+fmt(mineCost()),58,93);
-        label("REBIRTH 100K   x"+rebirths,58,37);
+        label("밑바닥 인생 3.2",28,606);
+        label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
+        label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
+        label("터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label("거리 노동",125,405);
+        label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
+        label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
+        label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth),58,209);
+        label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
+        label("지하층 확장 비용 "+fmt(mineCost()),58,93);
+        label("환생 100K  "+rebirths+"회",58,37);
         label(notice,18,351);
         batch.end();
     }
     @Override public void pause(){persist();}
-    @Override public void dispose(){persist();font.dispose();batch.dispose();shapes.dispose();}
+    @Override public void dispose(){persist();font.dispose();if(koreanAtlas!=null)koreanAtlas.dispose();batch.dispose();shapes.dispose();}
 }
