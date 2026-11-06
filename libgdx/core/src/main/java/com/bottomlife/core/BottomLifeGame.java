@@ -49,6 +49,7 @@ public class BottomLifeGame extends ApplicationAdapter {
     private int screen=0, career=0, claimed=0;
     private int questTier=0, questTapBase=0, questMineBase=0;
     private int mineActions=0;
+    private int mineBiomeCache=-1;
     private int growthMode=0;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
@@ -140,6 +141,18 @@ public class BottomLifeGame extends ApplicationAdapter {
     private double tapCost(){return Math.ceil(20*Math.pow(1.22,tapLevel-1));}
     private double workerCost(){return Math.ceil(50*Math.pow(1.3,workerLevel));}
     private double drillCost(){return Math.ceil(30*Math.pow(1.25,drillLevel-1));}
+    private int mineBiome(){return depth>=50?3:depth>=25?2:depth>=10?1:0;}
+    private String biomeName(){String[] names={"암석 동굴","수정 광맥","용암 심층","고대 유적"};return names[mineBiome()];}
+    private double biomeMultiplier(){return 1.0+mineBiome()*.35;}
+    private void refreshMineBiome(){
+        int biome=mineBiome();
+        if(biome==mineBiomeCache)return;
+        mineBiomeCache=biome;
+        if(mineSprite!=null)mineSprite.dispose();
+        if(mineForeground!=null)mineForeground.dispose();
+        mineSprite=makePixelScene(1);
+        mineForeground=makeForeground(1);
+    }
     private double mineCost(){return Math.ceil(10*Math.pow(1.2,depth-1));}
     private void checkAchievements(){
         boolean[] completed={totalTaps>=100,depth>=10,shops[0]>=10,rebirths>=1,treasures>=10};
@@ -166,10 +179,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void mineOnce(boolean large){
         effectX=180;effectY=452;effectTimer=.5f;effectKind=1;
         mineImpactTimer=.34f;mineRewardTimer=1.3f;mineRewardKind=0;
-        double amount=drillLevel*depth*(large?2:1);
+        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier();
         ore+=amount;mineActions++;flash=.16f;mineRewardAmount=amount;
-        if(Math.random()<Math.min(.4,.04+depth*.004)){gems++;mineRewardKind=1;}
-        if(Math.random()<.06){
+        if(Math.random()<Math.min(.55,.04+depth*.004+mineBiome()*.025)){gems++;mineRewardKind=1;}
+        if(Math.random()<.06+mineBiome()*.015){
             double bonus=100*depth*drillLevel;
             coins+=bonus;treasures++;mineRewardKind=2;mineRewardAmount=bonus;
             notice="보물상자 발견! +"+fmt(bonus);
@@ -205,8 +218,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(action==0)tapLevel++;
         if(action==1)workerLevel++;
         if(action==2)drillLevel++;
-        if(action==3)depth++;
-        notice="강화 성공!";
+        if(action==3){depth++;refreshMineBiome();notice="새로운 깊이: "+biomeName();}
+        if(action!=3)notice="강화 성공!";
         checkAchievements();persist();
     }
     private void input(float x,float y){
@@ -284,13 +297,17 @@ public class BottomLifeGame extends ApplicationAdapter {
         pixel(p,0,0,180,120,mode==1?"0b1426":mode==2?"192331":"27334a");
         java.util.Random random=new java.util.Random(3701+mode);
         if(mode==1){
-            pixel(p,0,0,180,120,"080e1e");
+            int biome=mineBiome();
+            String[] back={"080e1e","081c2a","30121a","19172e"};
+            String[] stone={"22253e","1b3948","513038","37304e"};
+            String[] gem={"3e9bd1","41d7dc","ed7543","b7a2ef"};
+            pixel(p,0,0,180,120,back[biome]);
             pixel(p,0,0,180,18,"111b31");
             for(int layer=0;layer<4;layer++){
                 int y=layer*23;
                 for(int i=0;i<18;i++){
                     int x=i*13-8+(layer%2)*7;
-                    pixel(p,x,y,12,15,layer%2==0?"22253e":"30324b");
+                    pixel(p,x,y,12,15,layer%2==0?stone[biome]:"30324b");
                     pixel(p,x+2,y+2,7,2,"42435d");
                 }
             }
@@ -306,7 +323,7 @@ public class BottomLifeGame extends ApplicationAdapter {
                 int x=random.nextInt(174),y=30+random.nextInt(68);
                 boolean blue=i%3!=0;
                 pixel(p,x,y,9,16,blue?"255c91":"755c9d");
-                pixel(p,x+2,y-8,5,11,blue?"3e9bd1":"a37bd4");
+                pixel(p,x+2,y-8,5,11,gem[biome]);
                 pixel(p,x+3,y-12,3,6,blue?"a0edff":"e1b4ff");
                 pixel(p,x+3,y+3,2,8,blue?"76d8f7":"d4a5ee");
             }
@@ -453,7 +470,10 @@ public class BottomLifeGame extends ApplicationAdapter {
             for(int x=145;x<178;x+=11)pixel(p,x,89,3,12,"55515b");
         }else{
             // Crystal clusters and foreground rock ledges frame the miner.
-            pixel(p,0,108,180,12,"101626");
+            String[] floor={"101626","102f3d","391b20","29213d"};
+            String[] crystal={"45acc8","51d8ce","f38b4b","b59cf0"};
+            int biome=mineBiome();
+            pixel(p,0,108,180,12,floor[biome]);
             pixel(p,0,108,180,3,"33384e");
             for(int i=0;i<16;i++){
                 int x=i*13-5;
@@ -463,7 +483,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             for(int x:new int[]{7,149}){
                 pixel(p,x,85,17,24,"26253d");
                 pixel(p,x+3,76,9,24,"3a3652");
-                pixel(p,x+6,67,4,22,"45acc8");
+                pixel(p,x+6,67,4,22,crystal[biome]);
                 pixel(p,x+8,73,2,13,"a5edfc");
                 pixel(p,x+1,89,20,4,"454159");
             }
@@ -548,6 +568,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         if(timer>=0.1f){coins+=income()*timer;timer=0;}
         if(workerLevel>=5 && drillLevel>=3){autoMineTimer+=delta;if(autoMineTimer>=5){ore+=drillLevel*depth;autoMineTimer=0;}}
         if(saveTimer>=10){persist();saveTimer=0;}
+        if(mineBiomeCache!=mineBiome())refreshMineBiome();
         Gdx.gl.glClearColor(.045f,.065f,.11f,1);Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
@@ -821,12 +842,12 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("임무",281,613);
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
-        label(screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
+        label(screen==1?"사업 운영":screen==2?biomeName():screen==3?(growthMode==0?"성장 능력":"임무 진행"):"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
         label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
             label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
-            label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth),58,209);
+            label("광산 채굴 "+depth+"층 +"+fmt(drillLevel*depth*biomeMultiplier()),58,209);
             label("채굴 강화 "+drillLevel+" 비용 "+fmt(drillCost()),58,151);
             label("지하층 확장 비용 "+fmt(mineCost()),58,93);
             label("환생 100K  "+rebirths+"회",58,37);
