@@ -68,6 +68,8 @@ public class BottomLifeGame extends ApplicationAdapter {
     private final int[] franchises=new int[5];
     private int franchiseSelected=0;
     private int businessContractTier=0,businessContractBase=0;
+    private final int[] soulTalents=new int[3];
+    private int careerRank=0;
     private final int[] growth=new int[3];
     private final int[] shops=new int[5];
     private final int[] managers=new int[5];
@@ -140,6 +142,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         businessContractTier=Math.max(0,save.getInteger("businessContractTier",0));
         businessContractBase=Math.max(0,save.getInteger("businessContractBase",0));
         for(int i=0;i<5;i++)franchises[i]=Math.max(0,save.getInteger("franchise"+i,0));
+        for(int i=0;i<3;i++)soulTalents[i]=Math.max(0,save.getInteger("soulTalent"+i,0));
+        careerRank=Math.max(0,save.getInteger("careerRank",0));
         for(int i=0;i<shops.length;i++){shops[i]=save.getInteger("shop"+i,0);managers[i]=save.getInteger("manager"+i,0);}
         for(int i=0;i<growth.length;i++)growth[i]=save.getInteger("growth"+i,0);
         long last=save.getLong("last",System.currentTimeMillis());
@@ -147,12 +151,29 @@ public class BottomLifeGame extends ApplicationAdapter {
         coins+=seconds*income()*0.5;
         if(seconds>60) notice="오프라인 수익 획득!";
     }
-    private double multiplier(){return (1+souls*0.15)*(1+growth[2]*.05);}
+    private double multiplier(){return (1+souls*0.15)*(1+growth[2]*.05)*(1+soulTalents[0]*.18);}
+    private double soulTalentCost(int i){return Math.ceil((i+1)*2.0*Math.pow(1.8,soulTalents[i]));}
+    private String soulTalentName(int i){return i==0?"전생의 힘":i==1?"노동의 달인":"광산의 기억";}
+    private void buySoulTalent(int i){
+        double cost=soulTalentCost(i);
+        if(!Double.isFinite(cost)||souls<cost){notice="영혼 부족!";return;}
+        souls-=cost;soulTalents[i]++;
+        notice=soulTalentName(i)+" "+soulTalents[i]+"단계";
+        persist();
+    }
+    private int careerRankTarget(){return (careerRank+1)*5;}
+    private void claimCareerRank(){
+        if(rebirths<careerRankTarget()){notice="환생 "+careerRankTarget()+"회 필요";return;}
+        careerRank++;
+        gems+=careerRank*10;
+        notice="직업 승급! 보석 +"+(careerRank*10);
+        persist();
+    }
     private double rebirthGain(){return coins<100000?0:Math.max(1,Math.floor(Math.sqrt(coins/100000)));}
     private void performRebirth(){double gain=rebirthGain();if(gain<1){notice="환생 필요: 100K 돈";return;}souls+=gain;rebirths++;career=Math.max(career,rebirths);coins=0;ore=0;tapLevel=1;workerLevel=0;drillLevel=1;depth=1;screen=0;notice="환생 성공! 영혼 +"+fmt(gain);checkAchievements();persist();}
     private double growthCost(int i){return Math.ceil(new double[]{200,800,2500}[i]*Math.pow(1.65,growth[i]));}
     private void upgradeGrowth(int i){double cost=growthCost(i);if(coins<cost){notice="성장 비용 부족!";return;}coins-=cost;growth[i]++;notice="능력 성장 Lv."+growth[i];persist();}
-    private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1));}
+    private double tapPower(){return Math.ceil((1+tapLevel*2)*(1+growth[0]*.12)*multiplier()*(1+career*.1)*(1+soulTalents[1]*.22));}
     private double income(){
         double total=workerLevel*(1+workerLevel*0.45)*multiplier()*(1+career*.05);
         for(int i=0;i<shops.length;i++)total+=shopIncome(i);
@@ -355,7 +376,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         effectX=72+lane*108;effectY=415;
         mineOnce(true);
         effectX=72+lane*108;effectY=415;
-        double extra=drillLevel*depth*biomeMultiplier()*mineGearYield()*(type==0?.6:type==1?1.0:type==2?1.7:2.5);
+        double extra=drillLevel*depth*biomeMultiplier()*(1+soulTalents[2]*.2)*mineGearYield()*(type==0?.6:type==1?1.0:type==2?1.7:2.5);
         ore+=extra;
         if(type==1&&mineNodeHits[lane]%5==0){gems+=2;notice="수정석 보너스! 보석 +2";}
         else if(type==3&&mineNodeHits[lane]%8==0){treasures++;coins+=depth*drillLevel*180;notice="고대석 유물 발견!";}
@@ -368,7 +389,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         mineShakeTimer=.22f;
         mineCombo=mineComboTimer>0?Math.min(30,mineCombo+1):1;
         mineComboTimer=2.2f;
-        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier()*mineGearYield()*(1+Math.min(.5,(mineCombo-1)*.02));
+        double amount=drillLevel*depth*(large?2:1)*biomeMultiplier()*(1+soulTalents[2]*.2)*mineGearYield()*(1+Math.min(.5,(mineCombo-1)*.02));
         ore+=amount;mineActions++;flash=.16f;mineRewardAmount=amount;
         if(Math.random()<Math.min(.75,.04+depth*.004+mineBiome()*.025+mineGear[1]*.012)){gems++;mineRewardKind=1;}
         if(Math.random()<.06+mineBiome()*.015){
@@ -406,6 +427,8 @@ public class BottomLifeGame extends ApplicationAdapter {
         save.putInteger("businessContractTier",businessContractTier);
         save.putInteger("businessContractBase",businessContractBase);
         for(int i=0;i<5;i++)save.putInteger("franchise"+i,franchises[i]);
+        for(int i=0;i<3;i++)save.putInteger("soulTalent"+i,soulTalents[i]);
+        save.putInteger("careerRank",careerRank);
         for(int i=0;i<shops.length;i++){save.putInteger("shop"+i,shops[i]);save.putInteger("manager"+i,managers[i]);}
         for(int i=0;i<growth.length;i++)save.putInteger("growth"+i,growth[i]);
         save.putLong("last",System.currentTimeMillis()); save.flush();
@@ -437,6 +460,10 @@ public class BottomLifeGame extends ApplicationAdapter {
             return;
         }
         if(screen==4){
+            if(y>=295&&y<345){buySoulTalent(0);return;}
+            if(y>=237&&y<287){buySoulTalent(1);return;}
+            if(y>=179&&y<229){buySoulTalent(2);return;}
+            if(y>=157&&y<179){claimCareerRank();return;}
             if(y>=80&&y<=156){performRebirth();return;}
             if(y>=18&&y<=74){screen=0;notice="거리 노동";return;}
             return;
@@ -781,7 +808,7 @@ public class BottomLifeGame extends ApplicationAdapter {
             autoMineTimer+=delta;
             float interval=Math.max(1.0f,5.0f-mineGear[2]*.45f);
             if(autoMineTimer>=interval){
-                ore+=drillLevel*depth*biomeMultiplier()*mineGearYield()*(1+mineGear[2]*.25);
+                ore+=drillLevel*depth*biomeMultiplier()*(1+soulTalents[2]*.2)*mineGearYield()*(1+mineGear[2]*.25);
                 autoMineTimer-=interval;
             }
         }
@@ -1157,6 +1184,14 @@ public class BottomLifeGame extends ApplicationAdapter {
             shapes.end();
         }
         // Draw labels last: previously the ore overlay covered reward text.
+        if(screen==4){
+            batch.begin();
+            label("전생의 힘 "+soulTalents[0]+" 비용 "+fmt(soulTalentCost(0)),36,325);
+            label("노동의 달인 "+soulTalents[1]+" 비용 "+fmt(soulTalentCost(1)),36,267);
+            label("광산의 기억 "+soulTalents[2]+" 비용 "+fmt(soulTalentCost(2)),36,209);
+            label("직업 승급 "+rebirths+"/"+careerRankTarget(),36,166);
+            batch.end();
+        }
         if(screen==1){
             batch.begin();
             label("지점 "+shopNames[franchiseSelected]+" "+franchises[franchiseSelected]+"단계",190,559);
