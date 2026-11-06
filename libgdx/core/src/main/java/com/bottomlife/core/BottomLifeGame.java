@@ -111,10 +111,12 @@ public class BottomLifeGame extends ApplicationAdapter {
         return total*multiplier()*(1+career*.05);
     }
     private double shopCost(int i){return Math.ceil(shopBase[i]*Math.pow(1.42,shops[i]));}
+    private double shopIncome(int i){return shops[i]*Math.pow(2.8,i)*Math.pow(1.12,shops[i])*multiplier()*(1+career*.05);}
+    private int businessLevels(){int n=0;for(int v:shops)n+=v;return n;}
     private void purchaseShop(int i){
         double price=shopCost(i);
         if(coins<price){notice="돈 부족!";return;}
-        coins-=price;shops[i]++;notice=shopNames[i]+" 사업 강화!";checkAchievements();persist();
+        coins-=price;shops[i]++;notice=shopNames[i]+" Lv."+shops[i]+" 초당 +"+fmt(shopIncome(i));checkAchievements();persist();
     }
     private void collectReward(){
         long today=System.currentTimeMillis()/86400000L;
@@ -195,9 +197,10 @@ public class BottomLifeGame extends ApplicationAdapter {
     private void input(float x,float y){
         effectX=x;effectY=y;
         if(x<0||x>W||y<0||y>H)return;
-        if(y>=588){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
+        if(y>=588&&y<=632){screen=Math.min(3,(int)(x/90));notice=screen==0?"거리 노동":screen==1?"사업 운영":screen==2?"광산 탐험":"성장 임무";return;}
         if(screen==3){if(y>=295&&y<345)claimQuest();else if(y>=237&&y<287)collectReward();else if(y>=8&&y<55){screen=0;}return;}
         if(screen==1){
+            if(y>=358&&y<588){notice="사업 "+businessLevels()+"레벨 초당 +"+fmt(income());return;}
             int[] bottoms={295,237,179,121,63};
             for(int i=0;i<5;i++)if(y>=bottoms[i] && y<bottoms[i]+50){purchaseShop(i);return;}
             if(y>=8&&y<55){collectReward();return;}
@@ -496,6 +499,22 @@ public class BottomLifeGame extends ApplicationAdapter {
                 rect(x+2,y+2,3,8,.76f,.93f,1f);
             }
         }
+        // Business cards have five distinct storefronts and real purchase targets.
+        if(screen==1){
+            for(int i=0;i<5;i++){
+                float y=295-i*58;
+                rect(17,y+3,324,43,.12f+i*.025f,.16f+i*.02f,.23f+i*.015f);
+                rect(19,y+42,320,3,.60f,.43f,.24f);
+                rect(25,y+11,28,27,.18f,.25f,.35f);
+                rect(27,y+15,24,13,.28f+i*.08f,.42f,.52f-i*.045f);
+                rect(26,y+28,26,7,.74f,.40f+i*.05f,.26f);
+                rect(31,y+17,5,9,.93f,.76f,.50f);
+                rect(42,y+17,5,9,.93f,.76f,.50f);
+                boolean can=coins>=shopCost(i);
+                rect(279,y+10,60,30,can?.40f:.25f,can?.65f:.28f,can?.25f:.34f);
+                rect(282,y+13,54,24,can?.78f:.42f,can?.58f:.40f,can?.30f:.42f);
+            }
+        }
         // Decorative but functional upgrade card icon glyphs.
         float[] ys={295,237,179,121,63,8};
         for(int i=0;i<ys.length;i++){
@@ -531,7 +550,7 @@ public class BottomLifeGame extends ApplicationAdapter {
         label("돈 "+fmt(coins)+"  초당 +"+fmt(income()),28,575);
         label("보석 "+fmt(gems)+" 광물 "+fmt(ore)+" 영혼 "+fmt(souls),28,545);
         label(screen==1?"사업 운영":screen==2?"광산 탐험":screen==3?"성장 임무":"터치해서 돈 획득 +"+fmt(tapPower()),52,501);
-        label(screen==1?"사업 제국":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
+        label(screen==1?"사업 "+businessLevels()+"레벨":screen==2?"지하 "+depth+"층":screen==3?"임무 보상":rebirths>0?"환생 성장":"거리 노동",125,405);
         if(screen==0){
             label("터치 강화 "+tapLevel+" 비용 "+fmt(tapCost()),58,325);
             label("노동자 고용 "+workerLevel+" 비용 "+fmt(workerCost()),58,267);
@@ -540,7 +559,12 @@ public class BottomLifeGame extends ApplicationAdapter {
             label("지하층 확장 비용 "+fmt(mineCost()),58,93);
             label("환생 100K  "+rebirths+"회",58,37);
         } else if(screen==1){
-            for(int i=0;i<5;i++)label(shopNames[i]+" "+shops[i]+" 비용 "+fmt(shopCost(i)),58,325-i*58);
+            for(int i=0;i<5;i++){
+                int y=326-i*58;
+                label(shopNames[i]+" Lv."+shops[i],60,y+5);
+                label("초당 +"+fmt(shopIncome(i)),60,y-13);
+                label(fmt(shopCost(i)),282,y-4);
+            }
             label("출석 보상 받기",58,37);
         } else if(screen==3){
             label("임무 보상 받기 "+(questTier+1),58,325);
